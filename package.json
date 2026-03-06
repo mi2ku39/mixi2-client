@@ -1,7 +1,7 @@
 {
   "name": "@mi2ku39/mixi2-client",
   "type": "module",
-  "version": "0.0.0-beta.2",
+  "version": "0.0.0-beta.3",
   "description": "TypeScript client types and RPC utilities for the mixi2 API.",
   "author": "Author Name <author.name@mail.com>",
   "license": "MIT",
