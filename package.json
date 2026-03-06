@@ -14,7 +14,11 @@
     "url": "https://github.com/author/library/issues"
   },
   "exports": {
-    ".": "./dist/index.mjs",
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    },
     "./package.json": "./package.json"
   },
   "main": "./dist/index.mjs",
@@ -28,6 +32,7 @@
     "dev": "tsdown --watch",
     "test": "vitest",
     "typecheck": "tsc --noEmit",
+    "version:bump": "bumpp --no-commit --no-tag",
     "prepublishOnly": "pnpm run build",
     "generate:mixi2-types": "tsx scripts/generate-mixi2-api-types.ts"
   },
