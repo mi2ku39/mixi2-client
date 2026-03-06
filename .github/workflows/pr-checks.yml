@@ -1,0 +1,23 @@
+name: PR Checks
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup project
+        uses: ./.github/actions/setup-pnpm
+
+      - name: Run tests
+        run: pnpm test
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup project
+        uses: ./.github/actions/setup-pnpm
+
+      - name: Run typecheck
+        run: pnpm typecheck
