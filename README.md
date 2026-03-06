@@ -2,6 +2,22 @@
 
 TypeScript client types and RPC utilities for the mixi2 API.
 
+## イベント購読 (`Mixi2Client#subscribeEvents`)
+
+`Mixi2Client#subscribeEvents(options)` は `AsyncIterable<Event>` を返し、サーバーストリーミングのイベントを順次受け取れます。
+
+- `options.signal` に `AbortSignal` を渡すと、購読をキャンセルできます。
+- 返却される要素は `Event` 型そのままのため、`event.body.case` で `pingEvent` を含むイベント種別を利用側で判別できます。
+
+### 再接続戦略
+
+本 SDK は **自動再接続を内包しません**。再接続ポリシー（指数バックオフ、最大試行回数、終了条件など）はアプリケーション側で実装してください。
+
+理由:
+
+- プロダクトごとに許容する遅延・再試行回数・監視方針が異なるため
+- 認証更新やネットワーク制約に応じて、適切な制御が利用側依存になるため
+
 ## インストール
 
 ```bash

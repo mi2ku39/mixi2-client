@@ -1,5 +1,5 @@
 {
-  "name": "mixi2-ts",
+  "name": "@mi2ku39/mixi2-client",
   "type": "module",
   "version": "0.0.0",
   "description": "TypeScript client types and RPC utilities for the mixi2 API.",

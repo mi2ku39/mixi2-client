@@ -3,6 +3,11 @@ export { createAuthorizationHeader } from './auth'
 export { createRpcTransport, type RpcCallOptions, type RpcTransport, type RpcTransportOptions } from './transport'
 export { TransportError, ValidationError } from './errors'
 export { type ApplicationApiClient } from './rpc/applicationApiClient'
+export {
+  type ApplicationStreamClient,
+  type SubscribeEventsOptions,
+  type SubscribeEventsResult,
+} from './rpc/applicationStreamClient'
 export { getUsers } from './rpc/getUsers'
 export { getPosts } from './rpc/getPosts'
 export { createPost } from './rpc/createPost'
