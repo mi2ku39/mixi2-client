@@ -32,6 +32,8 @@ jobs:
 
       - name: Setup project
         uses: ./.github/actions/setup-pnpm
+        with:
+          node-version: "24"
 
       - name: Run checks
         run: |
