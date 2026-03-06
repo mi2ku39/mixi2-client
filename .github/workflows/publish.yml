@@ -33,15 +33,15 @@ jobs:
       - name: Setup project
         uses: ./.github/actions/setup-pnpm
 
+      - name: Bump version with bumpp
+        run: |
+          pnpm exec bumpp "${{ github.event.inputs.version_bump }}" --commit "chore(release): %s" --tag "v%s"
+
       - name: Run checks
         run: |
           pnpm run build
           pnpm run test
           pnpm run typecheck
-
-      - name: Bump version with bumpp
-        run: |
-          pnpm exec bumpp "${{ github.event.inputs.version_bump }}" --commit "chore(release): %s" --tag "v%s"
 
       - name: Push version commit and tag
         run: |
