@@ -110,10 +110,19 @@ export class Mixi2Client {
   ): AsyncIterable<Event> {
     const iterator = stream[Symbol.asyncIterator]()
     let aborted = signal?.aborted ?? false
+    let iteratorClosed = false
+
+    const closeIterator = async () => {
+      if (iteratorClosed) {
+        return
+      }
+      iteratorClosed = true
+      await iterator.return?.()
+    }
 
     const abortHandler = () => {
       aborted = true
-      void iterator.return?.()
+      void closeIterator()
     }
 
     signal?.addEventListener('abort', abortHandler, { once: true })
@@ -134,7 +143,7 @@ export class Mixi2Client {
       }
     } finally {
       signal?.removeEventListener('abort', abortHandler)
-      await iterator.return?.()
+      await closeIterator()
     }
   }
 

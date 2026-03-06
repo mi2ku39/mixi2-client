@@ -160,4 +160,44 @@ describe('Mixi2Client#subscribeEvents', () => {
 
     expect(() => client.subscribeEvents()).toThrowError(ValidationError)
   })
+
+  test('does not start consuming when signal is already aborted', async () => {
+    const nextMock = vi.fn(async () => ({ done: false, value: create(SubscribeEventsResponseSchema) }))
+    const iteratorClosed = vi.fn()
+
+    const mockStream: AsyncIterable<SubscribeEventsResponse> = {
+      [Symbol.asyncIterator]() {
+        return {
+          next: nextMock,
+          return: vi.fn(async () => {
+            iteratorClosed()
+            return { done: true, value: undefined }
+          }),
+        }
+      },
+    }
+
+    const subscribeEventsMock = vi
+      .fn<(request: SubscribeEventsRequest) => AsyncIterable<SubscribeEventsResponse>>()
+      .mockReturnValue(mockStream)
+
+    const client = new Mixi2Client({
+      baseUrl: 'https://example.com',
+      accessToken: 'token',
+      serviceClient: { getUsers: vi.fn() },
+      streamServiceClient: { subscribeEvents: subscribeEventsMock },
+    })
+
+    const abortController = new AbortController()
+    abortController.abort()
+
+    const events = []
+    for await (const event of client.subscribeEvents({ signal: abortController.signal })) {
+      events.push(event)
+    }
+
+    expect(events).toHaveLength(0)
+    expect(nextMock).not.toHaveBeenCalled()
+    expect(iteratorClosed).toHaveBeenCalledTimes(1)
+  })
 })
