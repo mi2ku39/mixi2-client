@@ -32,6 +32,15 @@ cd mixi2-ts
 pnpm install
 ```
 
+## ESM import について
+
+このパッケージは ESM として公開されます（`"type": "module"`）。
+README内の import 例はすべて ESM 形式です。
+
+```ts
+import { Mixi2Client, createAuthorizationHeader } from 'mixi2-ts'
+```
+
 ## 初期化方法
 
 `Mixi2Client` を使って、`baseUrl`（APIエンドポイント）と `accessToken`（OAuth2アクセストークン）を指定して初期化します。
@@ -115,6 +124,12 @@ pnpm test
 ```bash
 pnpm build
 ```
+
+## リリース運用
+
+- SemVer方針とCHANGELOG更新フロー: `docs/release-policy.md`
+- Changelog本体: `CHANGELOG.md`
+- 手動publish workflow: `.github/workflows/publish.yml`
 
 ## 生成済み型（`src/generated/mixi2-api/...`）の利用方針
 
