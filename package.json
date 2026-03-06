@@ -32,6 +32,8 @@
     "generate:mixi2-types": "tsx scripts/generate-mixi2-api-types.ts"
   },
   "devDependencies": {
+    "@bufbuild/buf": "^1.59.0",
+    "@bufbuild/protobuf": "^2.11.0",
     "@types/node": "^25.0.3",
     "bumpp": "^10.3.2",
     "openapi-typescript": "^7.10.1",

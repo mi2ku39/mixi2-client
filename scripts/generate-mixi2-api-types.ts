@@ -13,17 +13,29 @@ const submoduleDir = resolve(rootDir, 'mixi2-api')
 const protoRootDir = resolve(submoduleDir, 'proto')
 const generatedDir = resolve(rootDir, 'src/generated/mixi2-api')
 const outputFile = resolve(rootDir, 'src/generated/mixi2-api.ts')
+const bufCliPath = resolve(
+  rootDir,
+  'node_modules/.bin',
+  process.platform === 'win32' ? 'buf.cmd' : 'buf',
+)
 
-async function ensureBufAvailable(): Promise<void> {
-  try {
-    await execFileAsync('buf', ['--version'], { maxBuffer: 1024 * 1024 })
-  } catch {
+async function ensureBufCliAvailable(): Promise<void> {
+  if (!existsSync(bufCliPath)) {
     throw new Error(
       [
-        '`buf` command was not found.',
-        'Install Buf first: https://buf.build/docs/cli/installation/',
+        '`@bufbuild/buf` is not installed.',
+        'Run `npm install` first and then retry `npm run generate:mixi2-types`.',
       ].join(' '),
     )
+  }
+
+  try {
+    await execFileAsync(bufCliPath, ['--version'], {
+      cwd: rootDir,
+      maxBuffer: 1024 * 1024,
+    })
+  } catch {
+    throw new Error('Failed to execute local buf CLI from @bufbuild/buf package.')
   }
 }
 
@@ -76,7 +88,7 @@ async function generateTypesFromProto(): Promise<void> {
   await writeFile(templatePath, template, 'utf8')
 
   try {
-    await execFileAsync('buf', ['generate', protoRootDir, '--template', templatePath], {
+    await execFileAsync(bufCliPath, ['generate', protoRootDir, '--template', templatePath], {
       cwd: rootDir,
       maxBuffer: 10 * 1024 * 1024,
     })
@@ -121,7 +133,7 @@ async function main(): Promise<void> {
     )
   }
 
-  await ensureBufAvailable()
+  await ensureBufCliAvailable()
   await generateTypesFromProto()
   const generatedCount = await writeBarrelFile()
 
