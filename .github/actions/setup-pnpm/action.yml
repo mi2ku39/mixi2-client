@@ -1,6 +1,16 @@
 name: Setup pnpm project
 description: Setup pnpm and Node.js, and install dependencies
 
+inputs:
+  node-version:
+    description: Node.js version to use
+    required: false
+    default: '22'
+  registry-url:
+    description: Registry URL for package publishing/auth
+    required: false
+    default: 'https://registry.npmjs.org'
+
 runs:
   using: composite
   steps:
@@ -12,8 +22,9 @@ runs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: 22
+        node-version: ${{ inputs.node-version }}
         cache: pnpm
+        registry-url: ${{ inputs.registry-url }}
 
     - name: Install dependencies
       shell: bash

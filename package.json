@@ -1,33 +1,46 @@
 {
-  "name": "tsdown-starter",
+  "name": "@mi2ku39/mixi2-client",
   "type": "module",
-  "version": "0.0.0",
-  "description": "A starter for creating a TypeScript package.",
+  "version": "0.0.0-beta.0",
+  "description": "TypeScript client types and RPC utilities for the mixi2 API.",
   "author": "Author Name <author.name@mail.com>",
   "license": "MIT",
-  "homepage": "https://github.com/author/library#readme",
+  "homepage": "https://github.com/mixi2ts/mixi2-ts#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/author/library.git"
+    "url": "git+https://github.com/mixi2ts/mixi2-ts.git"
   },
   "bugs": {
-    "url": "https://github.com/author/library/issues"
+    "url": "https://github.com/mixi2ts/mixi2-ts/issues"
+  },
+  "engines": {
+    "node": "^22.0.0"
   },
   "exports": {
-    ".": "./dist/index.mjs",
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    },
     "./package.json": "./package.json"
   },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch",
     "test": "vitest",
     "typecheck": "tsc --noEmit",
+    "version:bump": "bumpp --no-commit --no-tag",
     "prepublishOnly": "pnpm run build",
     "generate:mixi2-types": "tsx scripts/generate-mixi2-api-types.ts"
   },
