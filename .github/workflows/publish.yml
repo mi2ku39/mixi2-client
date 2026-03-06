@@ -39,6 +39,11 @@ jobs:
           pnpm run test
           pnpm run typecheck
 
+      - name: Configure git author for release commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Bump version with bumpp
         run: |
           pnpm exec bumpp "${{ github.event.inputs.version_bump }}" --commit "chore(release): %s" --tag "v%s" --yes
