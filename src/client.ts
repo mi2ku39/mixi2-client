@@ -1,26 +1,31 @@
 import { ValidationError } from './errors'
 import { getUsers, type ApplicationApiClient } from './rpc/getUsers'
+import { createRpcTransport, type RpcTransport, type RpcTransportOptions } from './transport'
 
-export type Mixi2ClientOptions = {
-  accessToken: string
-  serviceClient: ApplicationApiClient
-  timeoutMs?: number
+export type Mixi2ClientInitOptions = RpcTransportOptions & {
+  serviceClient?: ApplicationApiClient
+  serviceClientFactory?: (transport: RpcTransport) => ApplicationApiClient
 }
 
 export class Mixi2Client {
   private readonly serviceClient: ApplicationApiClient
-  private readonly timeoutMs?: number
+  private readonly transport: RpcTransport
 
-  constructor(options: Mixi2ClientOptions) {
-    if (!options.accessToken.trim()) {
-      throw new ValidationError('accessToken is required')
+  constructor(options: Mixi2ClientInitOptions) {
+    if (!options.baseUrl.trim()) {
+      throw new ValidationError('baseUrl is required')
     }
 
-    this.serviceClient = options.serviceClient
-    this.timeoutMs = options.timeoutMs
+    this.transport = createRpcTransport(options)
+    this.serviceClient =
+      options.serviceClient ??
+      options.serviceClientFactory?.(this.transport) ??
+      (() => {
+        throw new ValidationError('serviceClient or serviceClientFactory is required')
+      })()
   }
 
   async getUsers(userIdList: string[]) {
-    return getUsers(this.serviceClient, userIdList, this.timeoutMs)
+    return getUsers(this.serviceClient, userIdList, this.transport.createCallOptions())
   }
 }
