@@ -1,414 +1,199 @@
-# mixi2 API 仕様まとめ
+# mixi2 RPC API 実装計画（Node.jsパッケージ公開向け）
 
 公式リファレンス  
 https://developer.mixi.social/docs/reference/api-document
 
 ---
 
-# 概要
+## 1. 目的とスコープ
 
-mixi2 API は **Connect（gRPC-Web互換）** を利用した RPC API です。
+本リポジトリを **Node.js 向け npm パッケージ** として公開し、mixi2 の Connect/gRPC-Web API を TypeScript から安全に利用できる SDK を提供する。
 
-- プロトコル: **Connect / gRPC-Web**
-- 認証: **OAuth 2.0**
-- データ形式: **Protocol Buffers**
-
----
-
-# タスク目標
-これらのAPIにアクセスできるNode.jsパッケージを作成することです。
-
-# RPC API 一覧
-
-## GetUsers
-
-指定したユーザーIDのユーザー情報を取得します。
-
-### Request
-
-| フィールド | 型 | 説明 |
-|---|---|---|
-| user_id_list | repeated string | 取得対象ユーザーID |
-
-### Response
-
-| フィールド | 型 |
-|---|---|
-| users | repeated User |
+- 対象ランタイム: Node.js（推奨 LTS）
+- 言語: TypeScript
+- 公開形態: npm package（ESM 優先、型定義同梱）
+- 対象 API:
+  - GetUsers
+  - GetPosts
+  - CreatePost
+  - InitiatePostMediaUpload
+  - GetPostMediaStatus
+  - SendChatMessage
+  - GetStamps
+  - AddStampToPost
+  - SubscribeEvents（ストリーミング）
 
 ---
 
-## GetPosts
+## 2. 成果物（Definition of Done）
 
-指定したポストIDのポスト情報を取得します。
-
-### Request
-
-| フィールド | 型 | 説明 |
-|---|---|---|
-| post_id_list | repeated string | ポストID |
-
-### Response
-
-| フィールド | 型 |
-|---|---|
-| posts | repeated Post |
+1. `src/` 配下に API クライアントを実装し、各 RPC を型安全に呼び出せる。
+2. OAuth2 アクセストークンを使った認証付きリクエストが可能。
+3. 主要な入力制約（相互排他・必須条件・上限値）を SDK 側で検証する。
+4. SubscribeEvents を async iterator として受信できる。
+5. ユニットテストを追加し、主要バリデーションとリクエスト構築を検証する。
+6. README に利用手順（インストール・初期化・各 API 例・公開手順）を記載する。
+7. npm 公開に必要な `package.json` メタデータを整備する（name, repository, files, exports など）。
 
 ---
 
-## CreatePost
+## 3. 想定アーキテクチャ
 
-ポストを作成します。
+### 3.1 モジュール構成
 
-⚠️ `in_reply_to_post_id` と `quoted_post_id` は **同時指定不可**
+- `src/client.ts`
+  - SDK のエントリーポイント
+  - `Mixi2Client` クラスと初期化オプション
+- `src/auth.ts`
+  - OAuth2 トークン注入（Authorization ヘッダ）
+- `src/rpc/*.ts`
+  - API ごとの呼び出しラッパー
+- `src/validators/*.ts`
+  - CreatePost / SendChatMessage などの入力検証
+- `src/errors.ts`
+  - SDK 独自エラー（ValidationError, TransportError 等）
+- `src/index.ts`
+  - 公開 API の再エクスポート
 
-### Request
+### 3.2 依存関係（想定）
 
-| フィールド | 型 | 説明 |
-|---|---|---|
-| text | string | 投稿本文 |
-| in_reply_to_post_id | optional string | 返信先 |
-| quoted_post_id | optional string | 引用ポスト |
-| media_id_list | repeated string | 添付メディアID（最大4件） |
-| post_mask | optional PostMask | マスク |
-| publishing_type | optional PostPublishingType | 配信設定 |
-
-### Response
-
-| フィールド | 型 |
-|---|---|
-| post | Post |
-
----
-
-## InitiatePostMediaUpload
-
-メディアアップロードを開始します。
-
-### Request
-
-| フィールド | 型 | 説明 |
-|---|---|---|
-| content_type | string | MIMEタイプ |
-| data_size | uint64 | ファイルサイズ |
-| media_type | Type | メディア種別 |
-| description | optional string | 説明 |
-
-### Response
-
-| フィールド | 型 |
-|---|---|
-| media_id | string |
-| upload_url | string |
+- Connect/gRPC-Web クライアント（Node.js で利用可能な実装）
+- 既存の生成済み型（`src/generated/mixi2-api/...`）を再利用
 
 ---
 
-## GetPostMediaStatus
+## 4. API 実装ポリシー
 
-メディア処理状況を取得します。
+### 4.1 メソッド設計
 
-### Request
+- 各 RPC を `Mixi2Client` のメソッドとして提供
+- 返却値は可能な限り protobuf 生成型を利用
+- API 呼び出し時に以下のバリデーションを実施
 
-| フィールド | 型 |
-|---|---|
-| media_id | string |
+#### CreatePost
+- `inReplyToPostId` と `quotedPostId` は同時指定不可
+- `mediaIdList` は最大 4 件
 
-### Response
+#### SendChatMessage
+- `text` または `mediaId` のどちらか必須
 
-| フィールド | 型 |
-|---|---|
-| status | Status |
+#### GetStamps
+- `officialStampLanguage` 未指定時の挙動（空配列）を README に明記
 
----
+### 4.2 ストリーミング（SubscribeEvents）
 
-## SendChatMessage
+- `subscribeEvents(): AsyncIterable<Event>` 形式で公開
+- キャンセル処理（AbortSignal）を受け付ける
+- Ping イベントを利用側で識別しやすいよう型を維持
 
-チャットメッセージを送信します。
+### 4.3 エラー処理
 
-⚠️ `text` または `media_id` の **どちらか必須**
-
-### Request
-
-| フィールド | 型 | 説明 |
-|---|---|---|
-| room_id | string | 送信先 |
-| text | optional string | メッセージ |
-| media_id | optional string | 添付 |
-
-### Response
-
-| フィールド | 型 |
-|---|---|
-| message | ChatMessage |
+- 入力不正: `ValidationError`
+- 認証/通信失敗: `TransportError` に正規化
+- 可能なら status code / error code / request id を保持
 
 ---
 
-## GetStamps
+## 5. 実装フェーズ
 
-公式スタンプ一覧取得
+### Phase 0: 事前整備
 
-⚠️ `official_stamp_language` 未指定の場合  
-公式スタンプは **空配列**
+- 現在の公開設定を npm パッケージ向けに整理
+  - `name`, `description`, `repository`, `bugs`, `homepage`
+- Node.js バージョン方針（`engines`）を定義
+- 生成済み型の利用方針を確定（再生成手順を README に明記）
 
-### Request
+### Phase 1: SDK 基盤
 
-| フィールド | 型 |
-|---|---|
-| official_stamp_language | optional LanguageCode |
+- クライアント初期化オプションを定義
+  - `baseUrl`, `accessToken`, `fetch`, `timeoutMs`, `userAgent` など
+- 共通 transport 作成ロジックを実装
+- 認証ヘッダ注入を実装
 
-### Response
+### Phase 2: Unary RPC 実装
 
-| フィールド | 型 |
-|---|---|
-| official_stamp_sets | repeated OfficialStampSet |
+- 以下を順次実装 + テスト
+  1. GetUsers
+  2. GetPosts
+  3. CreatePost（相互排他 + 上限チェック）
+  4. InitiatePostMediaUpload
+  5. GetPostMediaStatus
+  6. SendChatMessage（必須条件チェック）
+  7. GetStamps
+  8. AddStampToPost
 
----
+### Phase 3: Streaming RPC 実装
 
-## AddStampToPost
+- SubscribeEvents を実装
+- 再接続方針を決定（SDKで内包するか、利用側に委譲するか）
+- 長時間接続時のエラー伝播をテスト
 
-ポストにスタンプを追加します。
+### Phase 4: DX とドキュメント
 
-### Request
+- README を SDK 向けに更新
+  - インストール
+  - OAuth2 トークン設定
+  - 各 RPC の最小サンプル
+  - イベント購読サンプル
+- 使用例を `examples/` に追加（必要なら）
 
-| フィールド | 型 |
-|---|---|
-| post_id | string |
-| stamp_id | string |
+### Phase 5: 公開準備
 
-### Response
-
-| フィールド | 型 |
-|---|---|
-| post | Post |
-
----
-
-## SubscribeEvents
-
-イベントストリームを購読します。
-
-### Request
-
-なし
-
-### Response
-
-| フィールド | 型 |
-|---|---|
-| events | repeated Event |
+- `pnpm run build`, `pnpm run test`, `pnpm run typecheck` を CI 相当で確認
+- ライセンス、公開対象ファイル（`files`）を最終確認
+- セマンティックバージョニングと CHANGELOG 運用を決定
 
 ---
 
-# オブジェクト定義
+## 6. テスト計画
 
-## User
+### 6.1 ユニットテスト
 
-| フィールド | 型 |
-|---|---|
-| user_id | string |
-| is_disabled | bool |
-| name | string |
-| display_name | string |
-| profile | string |
-| user_avatar | UserAvatar |
-| visibility | UserVisibility |
-| access_level | UserAccessLevel |
+- バリデーション
+  - CreatePost の相互排他
+  - mediaIdList 上限
+  - SendChatMessage の必須条件
+- クライアント
+  - 認証ヘッダが付与される
+  - 正しい RPC に正しい payload を渡す
 
----
+### 6.2 統合寄りテスト（モック transport）
 
-## UserAvatar
-
-| フィールド | 型 |
-|---|---|
-| large_image_url | string |
-| large_image_mime_type | string |
-| large_image_height | uint32 |
-| large_image_width | uint32 |
-| small_image_url | string |
-| small_image_mime_type | string |
-| small_image_height | uint32 |
-| small_image_width | uint32 |
+- 正常系レスポンスのマッピング
+- エラー時の正規化
+- SubscribeEvents のイベント受信・終了処理
 
 ---
 
-## Post
+## 7. 公開時のパッケージ方針
 
-| フィールド | 型 |
-|---|---|
-| post_id | string |
-| is_deleted | bool |
-| creator_id | string |
-| text | string |
-| created_at | Timestamp |
-| post_media_list | repeated PostMedia |
-| in_reply_to_post_id | optional string |
-| post_mask | optional PostMask |
-| visibility | PostVisibility |
-| access_level | PostAccessLevel |
-| stamps | repeated PostStamp |
-| reader_stamp_id | optional string |
+- `type: module` のまま ESM を正式サポート
+- `types` を同梱し TypeScript 利用者の補完を保証
+- 将来的に CJS が必要ならデュアル配布を検討
+- 公開前チェックリスト
+  1. 不要ファイルが publish 対象に含まれていない
+  2. README の import 例が実際に動作する
+  3. バージョン・タグ運用ルールが合意済み
 
 ---
 
-## PostMask
+## 8. リスクと対策
 
-| フィールド | 型 |
-|---|---|
-| mask_type | PostMaskType |
-| caption | string |
-
----
-
-## PostMedia
-
-| フィールド | 型 |
-|---|---|
-| media_type | PostMediaType |
-| image | PostMediaImage |
-| video | PostMediaVideo |
+1. **API 仕様更新リスク**
+   - 対策: `mixi2-api` 生成型更新手順を固定化し、差分確認を CI 化
+2. **ストリーミングの接続安定性**
+   - 対策: AbortSignal と再接続戦略を明示し、利用側に制御点を提供
+3. **OAuth2 トークン管理の誤用**
+   - 対策: README に安全な取り扱い（環境変数利用、ログ出力禁止）を記載
 
 ---
 
-## PostMediaImage
+## 9. 実装順の提案（短期）
 
-| フィールド | 型 |
-|---|---|
-| large_image_url | string |
-| large_image_mime_type | string |
-| large_image_height | uint32 |
-| large_image_width | uint32 |
-| small_image_url | string |
-| small_image_mime_type | string |
-| small_image_height | uint32 |
-| small_image_width | uint32 |
+1. `Mixi2Client` 基盤 + GetUsers/GetPosts
+2. CreatePost/SendChatMessage のバリデーション層
+3. 残り unary RPC
+4. SubscribeEvents
+5. README と公開設定の仕上げ
 
----
-
-## PostMediaVideo
-
-| フィールド | 型 |
-|---|---|
-| video_url | string |
-| video_mime_type | string |
-| video_height | uint32 |
-| video_width | uint32 |
-| preview_image_url | string |
-| preview_image_mime_type | string |
-| preview_image_height | uint32 |
-| preview_image_width | uint32 |
-| duration | float |
-
----
-
-## ChatMessage
-
-| フィールド | 型 |
-|---|---|
-| room_id | string |
-| message_id | string |
-| creator_id | string |
-| text | string |
-| created_at | Timestamp |
-| media_list | repeated Media |
-| post_id | optional string |
-
----
-
-# イベント
-
-## Event
-
-| フィールド | 型 |
-|---|---|
-| event_id | string |
-| event_type | EventType |
-| ping_event | PingEvent |
-| post_created_event | PostCreatedEvent |
-| chat_message_received_event | ChatMessageReceivedEvent |
-
----
-
-## PostCreatedEvent
-
-| フィールド | 型 |
-|---|---|
-| event_reason_list | repeated EventReason |
-| post | Post |
-| issuer | User |
-
----
-
-## ChatMessageReceivedEvent
-
-| フィールド | 型 |
-|---|---|
-| event_reason_list | repeated EventReason |
-| message | ChatMessage |
-| issuer | User |
-
----
-
-# Enum
-
-## EventType
-
-| 値 | 説明 |
-|---|---|
-| EVENT_TYPE_UNSPECIFIED | 未指定 |
-| EVENT_TYPE_PING | 接続確認 |
-| EVENT_TYPE_POST_CREATED | 投稿作成 |
-| EVENT_TYPE_CHAT_MESSAGE_RECEIVED | メッセージ受信 |
-
----
-
-## MediaType
-
-| 値 | 説明 |
-|---|---|
-| MEDIA_TYPE_IMAGE | 画像 |
-| MEDIA_TYPE_VIDEO | 動画 |
-
----
-
-## PostAccessLevel
-
-| 値 | 説明 |
-|---|---|
-| POST_ACCESS_LEVEL_PUBLIC | 公開 |
-| POST_ACCESS_LEVEL_PRIVATE | 非公開 |
-
----
-
-## PostMaskType
-
-| 値 | 説明 |
-|---|---|
-| POST_MASK_TYPE_SENSITIVE | センシティブ |
-| POST_MASK_TYPE_SPOILER | ネタバレ |
-
----
-
-## StampSetType
-
-| 値 | 説明 |
-|---|---|
-| STAMP_SET_TYPE_DEFAULT | デフォルト |
-| STAMP_SET_TYPE_SEASONAL | 季節 |
-
----
-
-# 実装注意
-
-- OAuth2 認証が必須
-- gRPC-Web / Connect RPC
-- 投稿メディアは **最大4件**
-- 返信と引用は **同時指定不可**
-- チャットは **text or media 必須**
-- イベントは **ストリーミング受信**
-
----
-
-# 参考
-
-公式ドキュメント  
-https://developer.mixi.social/docs/reference/api-document
+この順序で進めることで、早期に SDK の利用価値を提供しつつ、難易度の高いストリーミング処理を後段で安定実装できる。
