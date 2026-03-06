@@ -41,7 +41,7 @@ jobs:
 
       - name: Bump version with bumpp
         run: |
-          pnpm exec bumpp "${{ github.event.inputs.version_bump }}" --commit "chore(release): %s" --tag "v%s"
+          pnpm exec bumpp "${{ github.event.inputs.version_bump }}" --commit "chore(release): %s" --tag "v%s" --yes
 
       - name: Push version commit and tag
         run: |
