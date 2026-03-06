@@ -235,15 +235,12 @@ pnpm build
 ```
 
 ## リリース運用
-<<<<<<< HEAD
-=======
 
 - SemVer方針とCHANGELOG更新フロー: `docs/release-policy.md`
 - Changelog本体: `CHANGELOG.md`
 - 手動publish workflow: `.github/workflows/publish.yml`
 
 ## 生成済み型（`src/generated/mixi2-api/...`）の利用方針
->>>>>>> 0a886f3 (fix: switch publish workflow to npm trusted publisher oidc)
 
 - SemVer方針とCHANGELOG更新フロー: `docs/release-policy.md`
 - Changelog本体: `CHANGELOG.md`
