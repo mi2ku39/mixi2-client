@@ -40,7 +40,8 @@ jobs:
           pnpm run typecheck
 
       - name: Bump version with bumpp
-        run: pnpm exec bumpp "${{ github.event.inputs.version_bump }}" --commit "chore(release): %s" --tag "v%s"
+        run: |
+          pnpm exec bumpp "${{ github.event.inputs.version_bump }}" --commit "chore(release): %s" --tag "v%s"
 
       - name: Push version commit and tag
         run: |
