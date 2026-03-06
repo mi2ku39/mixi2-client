@@ -29,6 +29,6 @@ CI では `workflow_dispatch` の入力値を bumpp に渡して同じルール�
 
 ## npm package provenance
 
-手動 publish workflow は npmjs の Trusted Publisher（GitHub OIDC）を使って `pnpm publish --provenance` を実行します。
+手動 publish workflow は npmjs の Trusted Publisher（GitHub OIDC）を使って `npm publish --provenance` を実行します。
 `NODE_AUTH_TOKEN` は利用せず、OIDC ベースで npm publish を行います。
 これにより npmjs.com 上で package provenance を表示できます。
