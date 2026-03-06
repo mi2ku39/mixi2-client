@@ -2,13 +2,91 @@
 
 TypeScript client types and RPC utilities for the mixi2 API.
 
-## Development
+## インストール
 
-- Install dependencies:
+```bash
+pnpm add mixi2-ts
+```
+
+開発環境でこのリポジトリを直接利用する場合:
+
+```bash
+git clone https://github.com/mixi2ts/mixi2-ts.git
+cd mixi2-ts
+pnpm install
+```
+
+## 初期化方法
+
+`Mixi2Client` を使って、`baseUrl`（APIエンドポイント）と `accessToken`（OAuth2アクセストークン）を指定して初期化します。
+
+```ts
+import { Mixi2Client } from 'mixi2-ts'
+
+const client = new Mixi2Client({
+  baseUrl: 'https://api.mixi.social',
+  accessToken: process.env.MIXI2_ACCESS_TOKEN ?? '',
+  serviceClientFactory: () => {
+    throw new Error('実際のRPCクライアントを注入してください')
+  },
+})
+```
+
+> `serviceClient` または `serviceClientFactory` は必須です。生成済みの gRPC/Connect クライアントを注入して利用してください。
+
+## OAuth2トークン設定方法
+
+アクセストークンは環境変数経由で扱うのが安全です。例:
+
+```bash
+export MIXI2_ACCESS_TOKEN='your-oauth2-access-token'
+```
+
+`createAuthorizationHeader` を使うと `Authorization` ヘッダー文字列を生成できます。
+
+```ts
+import { createAuthorizationHeader } from 'mixi2-ts'
+
+const authorization = createAuthorizationHeader(process.env.MIXI2_ACCESS_TOKEN ?? '')
+// => "Bearer your-oauth2-access-token"
+```
+
+## 各RPCの最小実行サンプル
+
+最小サンプルを `examples/rpc-minimal.ts` に用意しています。各RPCについて「入力」「呼び出し」「結果利用」を1つずつ含みます。
+
+実行手順:
 
 ```bash
 pnpm install
+pnpm tsx examples/rpc-minimal.ts
 ```
+
+サンプル内容（抜粋）:
+
+```ts
+import {
+  addStampToPost,
+  createPost,
+  getPostMediaStatus,
+  getPosts,
+  getStamps,
+  getUsers,
+  initiatePostMediaUpload,
+  sendChatMessage,
+} from 'mixi2-ts'
+
+// 1) 入力
+const userIds = ['user-1']
+
+// 2) 呼び出し
+const usersResponse = await getUsers(serviceClient, userIds)
+
+// 3) 結果利用
+console.log(usersResponse.users)
+```
+
+## Development
 
 - Run the unit tests:
 
