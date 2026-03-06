@@ -56,4 +56,4 @@ jobs:
           git push origin --tags
 
       - name: Publish package (OIDC Trusted Publisher)
-        run: npm publish --access public --provenance
+        run: pnpm publish --access public --provenance --no-git-check
