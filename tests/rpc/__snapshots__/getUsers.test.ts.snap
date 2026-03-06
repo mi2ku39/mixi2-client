@@ -1,0 +1,11 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`getUsers RPC > matches request payload snapshot 1`] = `
+{
+  "$typeName": "social.mixi.application.service.application_api.v1.GetUsersRequest",
+  "userIdList": [
+    "user-1",
+    "user-2",
+  ],
+}
+`;

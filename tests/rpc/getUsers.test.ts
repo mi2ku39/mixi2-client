@@ -18,6 +18,16 @@ describe('getUsers RPC', () => {
     expect(getUsersMock.mock.calls[0]?.[0].userIdList).toEqual(['user-1'])
   })
 
+  test('matches request payload snapshot', async () => {
+    const getUsersMock = vi
+      .fn<(request: GetUsersRequest) => Promise<ReturnType<typeof create<typeof GetUsersResponseSchema>>>>()
+      .mockResolvedValue(create(GetUsersResponseSchema))
+
+    await getUsers({ getUsers: getUsersMock }, ['user-1', 'user-2'])
+
+    expect(getUsersMock.mock.calls[0]?.[0]).toMatchSnapshot()
+  })
+
   test('throws ValidationError when userIdList is empty', async () => {
     await expect(getUsers({ getUsers: vi.fn() }, [])).rejects.toBeInstanceOf(ValidationError)
   })
