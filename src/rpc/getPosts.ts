@@ -1,26 +1,26 @@
 import { create } from '@bufbuild/protobuf'
 import {
-  GetUsersRequestSchema,
-  type GetUsersResponse,
+  GetPostsRequestSchema,
+  type GetPostsResponse,
 } from '../generated/mixi2-api/social/mixi/application/service/application_api/v1/service_pb'
 import { TransportError, ValidationError } from '../errors'
 import type { ApplicationApiClient } from './applicationApiClient'
 import type { RpcCallOptions } from '../transport'
 
-export async function getUsers(
+export async function getPosts(
   serviceClient: ApplicationApiClient,
-  userIdList: string[],
+  postIdList: string[],
   options?: RpcCallOptions,
-): Promise<GetUsersResponse> {
-  if (userIdList.length === 0) {
-    throw new ValidationError('userIdList must not be empty')
+): Promise<GetPostsResponse> {
+  if (postIdList.length === 0) {
+    throw new ValidationError('postIdList must not be empty')
   }
 
-  const request = create(GetUsersRequestSchema, { userIdList })
+  const request = create(GetPostsRequestSchema, { postIdList })
 
   try {
-    return await serviceClient.getUsers(request, options)
+    return await serviceClient.getPosts(request, options)
   } catch (error) {
-    throw new TransportError('failed to call GetUsers', { cause: error })
+    throw new TransportError('failed to call GetPosts', { cause: error })
   }
 }
