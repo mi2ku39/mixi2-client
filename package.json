@@ -1,0 +1,15 @@
+{
+  "name": "mixi2-ts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsdown",
+    "build:watch": "tsdown --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "tsdown": "^0.13.0",
+    "typescript": "^5.8.2"
+  }
+}
