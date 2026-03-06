@@ -5,6 +5,7 @@ export type RpcHeadersInit = Headers | Record<string, string> | Array<[string, s
 export type RpcCallOptions = {
   timeoutMs?: number
   headers?: RpcHeadersInit
+  signal?: AbortSignal
 }
 
 export type RpcTransportOptions = {
@@ -18,7 +19,7 @@ export type RpcTransportOptions = {
 export type RpcTransport = {
   baseUrl: string
   fetch: typeof globalThis.fetch
-  createCallOptions: (options?: RpcCallOptions) => { timeoutMs?: number; headers: Headers }
+  createCallOptions: (options?: RpcCallOptions) => { timeoutMs?: number; headers: Headers; signal?: AbortSignal }
 }
 
 export function createRpcTransport(options: RpcTransportOptions): RpcTransport {
@@ -47,6 +48,7 @@ export function createRpcTransport(options: RpcTransportOptions): RpcTransport {
       return {
         timeoutMs: callOptions?.timeoutMs ?? options.timeoutMs,
         headers,
+        signal: callOptions?.signal,
       }
     },
   }
