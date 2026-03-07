@@ -32,6 +32,8 @@ jobs:
 
       - name: Setup project
         uses: ./.github/actions/setup-pnpm
+        with:
+          node-version: "24"
 
       - name: Configure git user for release commit
         run: |
@@ -47,11 +49,6 @@ jobs:
       - name: Bump version with bumpp
         run: |
           pnpm exec bumpp "${{ github.event.inputs.version_bump }}" --commit "chore(release): %s" --tag "v%s" --yes
-
-      - name: Push version commit and tag
-        run: |
-          git push origin HEAD
-          git push origin --tags
 
       - name: Determine npm dist-tag
         id: npm_tag
@@ -70,4 +67,9 @@ jobs:
           esac
 
       - name: Publish package (OIDC Trusted Publisher)
-        run: pnpm publish --access public --no-git-checks --provenance --tag "${{ steps.npm_tag.outputs.npm_tag }}"
+        run: pnpm publish --no-git-checks --provenance --tag "${{ steps.npm_tag.outputs.npm_tag }}"
+
+      - name: Push version commit and tag
+        run: |
+          git push origin HEAD
+          git push origin --tags
