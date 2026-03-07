@@ -19,6 +19,31 @@ const serviceClient = createDefaultServiceClient({
 })
 ```
 
+## アクセストークンの動的取得（`accessTokenProvider`）
+
+`createDefaultServiceClient` は `accessTokenProvider: () => Promise<string> | string` を受け付けます。
+
+```ts
+import { createDefaultServiceClient } from '@mi2ku39/mixi2-client'
+
+const serviceClient = createDefaultServiceClient({
+  baseUrl: process.env.MIXI2_BASE_URL ?? '',
+  accessTokenProvider: async () => {
+    const token = await refreshAccessTokenSomehow()
+    return token
+  },
+})
+```
+
+トークン指定の優先順位は次の通りです。
+
+1. `headers.authorization`（明示指定）
+2. `accessTokenProvider`
+3. `accessToken`
+
+`accessTokenProvider` はリクエストごとに評価されます。
+そのため、401（gRPC の `UNAUTHENTICATED`）で失敗した後に利用側で同じ API を再試行すると、provider が再実行され、新しいトークンを使った再取得フローを実装できます。
+
 ## 30秒で試す（初期化 + 1つの API 呼び出し）
 
 ```ts
@@ -107,6 +132,8 @@ console.log(token.accessToken)
 
 - `examples/create-default-service-client.ts`
   - 既存アクセストークンで `createDefaultServiceClient` を初期化し、`getUsers` を 1 回実行します。
+- `examples/create-default-service-client-with-provider.ts`
+  - `accessTokenProvider` で都度トークンを取得し、`UNAUTHENTICATED` 発生時に再試行する例です。
 - `examples/get-access-token.ts`
   - `getAccessTokenFromEnv` でトークンを取得します。
 - `examples/get-access-token-and-get-posts.ts`
@@ -117,6 +144,7 @@ console.log(token.accessToken)
 ```bash
 pnpm install
 node --experimental-strip-types examples/create-default-service-client.ts
+node --experimental-strip-types examples/create-default-service-client-with-provider.ts
 node --experimental-strip-types examples/get-access-token.ts
 node --experimental-strip-types examples/get-access-token-and-get-posts.ts
 ```
