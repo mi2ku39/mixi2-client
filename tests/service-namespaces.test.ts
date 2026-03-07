@@ -7,34 +7,40 @@ import {
 } from '../src'
 
 describe('service namespace exports', () => {
-  test('application api service exports grpc definitions', () => {
-    expect(applicationApi).toHaveProperty('ApplicationServiceService')
-    expect(applicationApi).toHaveProperty('ApplicationServiceClient')
-    expect(applicationApi).toHaveProperty('GetUsersRequest')
+  test('keeps stable application api service definitions', () => {
+    const rpcSummary = Object.entries(applicationApi.ApplicationServiceService).map(([name, definition]) => ({
+      name,
+      path: definition.path,
+      requestStream: definition.requestStream,
+      responseStream: definition.responseStream,
+    }))
 
-    expect(applicationApi.ApplicationServiceService.getUsers.path).toBe(
-      '/social.mixi.application.service.application_api.v1.ApplicationService/GetUsers',
-    )
-    expect(applicationApi.ApplicationServiceClient.serviceName).toBe(
-      'social.mixi.application.service.application_api.v1.ApplicationService',
-    )
+    expect({
+      serviceName: applicationApi.ApplicationServiceClient.serviceName,
+      rpcSummary,
+    }).toMatchSnapshot()
   })
 
-  test('application stream service exports stream rpc definitions', () => {
-    expect(applicationStream).toHaveProperty('ApplicationServiceService')
-    expect(applicationStream).toHaveProperty('ApplicationServiceClient')
+  test('keeps stable application stream service definitions', () => {
+    const rpcSummary = Object.entries(applicationStream.ApplicationServiceService).map(([name, definition]) => ({
+      name,
+      path: definition.path,
+      requestStream: definition.requestStream,
+      responseStream: definition.responseStream,
+    }))
 
-    expect(applicationStream.ApplicationServiceService.subscribeEvents.path).toBe(
-      '/social.mixi.application.service.application_stream.v1.ApplicationService/SubscribeEvents',
-    )
-    expect(applicationStream.ApplicationServiceClient.serviceName).toBe(
-      'social.mixi.application.service.application_stream.v1.ApplicationService',
-    )
+    expect({
+      serviceName: applicationStream.ApplicationServiceClient.serviceName,
+      rpcSummary,
+    }).toMatchSnapshot()
   })
 
-  test('client endpoint service exports message codec', () => {
-    expect(clientEndpoint).toHaveProperty('SendEventRequest')
-    expect(typeof clientEndpoint.SendEventRequest.encode).toBe('function')
-    expect(typeof clientEndpoint.SendEventRequest.decode).toBe('function')
+  test('keeps stable client endpoint message codec surface', () => {
+    const messageCodecSurface = {
+      exportedKeys: Object.keys(clientEndpoint).sort(),
+      sendEventRequestMethods: Object.keys(clientEndpoint.SendEventRequest).sort(),
+    }
+
+    expect(messageCodecSurface).toMatchSnapshot()
   })
 })

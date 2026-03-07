@@ -10,9 +10,19 @@ import {
 } from '../src'
 
 describe('event enum json mapping', () => {
-  test('maps known EventType values', () => {
-    expect(eventTypeFromJSON('EVENT_TYPE_PING')).toBe(EventType.EVENT_TYPE_PING)
-    expect(eventTypeToJSON(EventType.EVENT_TYPE_CHAT_MESSAGE_RECEIVED)).toBe('EVENT_TYPE_CHAT_MESSAGE_RECEIVED')
+  test('keeps stable EventType json mapping table', () => {
+    const eventTypeMappings = [
+      EventType.EVENT_TYPE_UNSPECIFIED,
+      EventType.EVENT_TYPE_PING,
+      EventType.EVENT_TYPE_POST_CREATED,
+      EventType.EVENT_TYPE_CHAT_MESSAGE_RECEIVED,
+      EventType.UNRECOGNIZED,
+    ].map((value) => ({
+      value,
+      name: eventTypeToJSON(value),
+    }))
+
+    expect(eventTypeMappings).toMatchSnapshot()
   })
 
   test('maps unknown EventType to UNRECOGNIZED', () => {
@@ -20,8 +30,21 @@ describe('event enum json mapping', () => {
     expect(eventTypeToJSON(EventType.UNRECOGNIZED)).toBe('UNRECOGNIZED')
   })
 
-  test('maps known EventReason values', () => {
+  test('keeps stable EventReason json mapping table', () => {
+    const eventReasonMappings = [
+      EventReason.EVENT_REASON_UNSPECIFIED,
+      EventReason.EVENT_REASON_PING,
+      EventReason.EVENT_REASON_POST_REPLY,
+      EventReason.EVENT_REASON_POST_MENTIONED,
+      EventReason.EVENT_REASON_POST_QUOTED,
+      EventReason.EVENT_REASON_DIRECT_MESSAGE_RECEIVED,
+      EventReason.UNRECOGNIZED,
+    ].map((value) => ({
+      value,
+      name: eventReasonToJSON(value),
+    }))
+
+    expect(eventReasonMappings).toMatchSnapshot()
     expect(eventReasonFromJSON('EVENT_REASON_PING')).toBe(EventReason.EVENT_REASON_PING)
-    expect(eventReasonToJSON(EventReason.EVENT_REASON_POST_QUOTED)).toBe('EVENT_REASON_POST_QUOTED')
   })
 })

@@ -1,0 +1,59 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`event enum json mapping > keeps stable EventReason json mapping table 1`] = `
+[
+  {
+    "name": "EVENT_REASON_UNSPECIFIED",
+    "value": 0,
+  },
+  {
+    "name": "EVENT_REASON_PING",
+    "value": 1,
+  },
+  {
+    "name": "EVENT_REASON_POST_REPLY",
+    "value": 2,
+  },
+  {
+    "name": "EVENT_REASON_POST_MENTIONED",
+    "value": 3,
+  },
+  {
+    "name": "EVENT_REASON_POST_QUOTED",
+    "value": 4,
+  },
+  {
+    "name": "EVENT_REASON_DIRECT_MESSAGE_RECEIVED",
+    "value": 8,
+  },
+  {
+    "name": "UNRECOGNIZED",
+    "value": -1,
+  },
+]
+`;
+
+exports[`event enum json mapping > keeps stable EventType json mapping table 1`] = `
+[
+  {
+    "name": "EVENT_TYPE_UNSPECIFIED",
+    "value": 0,
+  },
+  {
+    "name": "EVENT_TYPE_PING",
+    "value": 1,
+  },
+  {
+    "name": "EVENT_TYPE_POST_CREATED",
+    "value": 2,
+  },
+  {
+    "name": "EVENT_TYPE_CHAT_MESSAGE_RECEIVED",
+    "value": 4,
+  },
+  {
+    "name": "UNRECOGNIZED",
+    "value": -1,
+  },
+]
+`;

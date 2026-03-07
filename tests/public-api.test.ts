@@ -10,9 +10,11 @@ describe('public api barrel exports', () => {
     expect(root.PostVisibility).toBe(generated.PostVisibility)
   })
 
-  test('exposes expected service namespaces', () => {
-    expect(root).toHaveProperty('social_mixi_application_service_application_api_v1_service')
-    expect(root).toHaveProperty('social_mixi_application_service_application_stream_v1_service')
-    expect(root).toHaveProperty('social_mixi_application_service_client_endpoint_v1_service')
+  test('keeps stable service namespace exports', () => {
+    const serviceNamespaces = Object.keys(root)
+      .filter((key) => key.startsWith('social_mixi_application_service_'))
+      .sort()
+
+    expect(serviceNamespaces).toMatchSnapshot()
   })
 })

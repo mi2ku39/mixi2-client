@@ -1,0 +1,87 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`service namespace exports > keeps stable application api service definitions 1`] = `
+{
+  "rpcSummary": [
+    {
+      "name": "getUsers",
+      "path": "/social.mixi.application.service.application_api.v1.ApplicationService/GetUsers",
+      "requestStream": false,
+      "responseStream": false,
+    },
+    {
+      "name": "getPosts",
+      "path": "/social.mixi.application.service.application_api.v1.ApplicationService/GetPosts",
+      "requestStream": false,
+      "responseStream": false,
+    },
+    {
+      "name": "createPost",
+      "path": "/social.mixi.application.service.application_api.v1.ApplicationService/CreatePost",
+      "requestStream": false,
+      "responseStream": false,
+    },
+    {
+      "name": "initiatePostMediaUpload",
+      "path": "/social.mixi.application.service.application_api.v1.ApplicationService/InitiatePostMediaUpload",
+      "requestStream": false,
+      "responseStream": false,
+    },
+    {
+      "name": "getPostMediaStatus",
+      "path": "/social.mixi.application.service.application_api.v1.ApplicationService/GetPostMediaStatus",
+      "requestStream": false,
+      "responseStream": false,
+    },
+    {
+      "name": "sendChatMessage",
+      "path": "/social.mixi.application.service.application_api.v1.ApplicationService/SendChatMessage",
+      "requestStream": false,
+      "responseStream": false,
+    },
+    {
+      "name": "getStamps",
+      "path": "/social.mixi.application.service.application_api.v1.ApplicationService/GetStamps",
+      "requestStream": false,
+      "responseStream": false,
+    },
+    {
+      "name": "addStampToPost",
+      "path": "/social.mixi.application.service.application_api.v1.ApplicationService/AddStampToPost",
+      "requestStream": false,
+      "responseStream": false,
+    },
+  ],
+  "serviceName": "social.mixi.application.service.application_api.v1.ApplicationService",
+}
+`;
+
+exports[`service namespace exports > keeps stable application stream service definitions 1`] = `
+{
+  "rpcSummary": [
+    {
+      "name": "subscribeEvents",
+      "path": "/social.mixi.application.service.application_stream.v1.ApplicationService/SubscribeEvents",
+      "requestStream": false,
+      "responseStream": true,
+    },
+  ],
+  "serviceName": "social.mixi.application.service.application_stream.v1.ApplicationService",
+}
+`;
+
+exports[`service namespace exports > keeps stable client endpoint message codec surface 1`] = `
+{
+  "exportedKeys": [
+    "SendEventRequest",
+  ],
+  "sendEventRequestMethods": [
+    "create",
+    "decode",
+    "encode",
+    "fromJSON",
+    "fromPartial",
+    "toJSON",
+  ],
+}
+`;
