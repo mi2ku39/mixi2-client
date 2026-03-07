@@ -6,8 +6,6 @@
 
 /* eslint-disable */
 
-export const protobufPackage = "social.mixi.application.const.v1";
-
 /** ポストに適用するマスク種別を示す列挙型 */
 export enum PostMaskType {
   /** POST_MASK_TYPE_UNSPECIFIED - 未指定 */

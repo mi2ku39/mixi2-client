@@ -6,8 +6,6 @@
 
 /* eslint-disable */
 
-export const protobufPackage = "social.mixi.application.const.v1";
-
 /** 言語コードを示す列挙型 */
 export enum LanguageCode {
   /** LANGUAGE_CODE_UNSPECIFIED - 未指定 */

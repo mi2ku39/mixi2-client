@@ -6,8 +6,6 @@
 
 /* eslint-disable */
 
-export const protobufPackage = "social.mixi.application.const.v1";
-
 /** イベントの発生理由を示す列挙型 */
 export enum EventReason {
   /** EVENT_REASON_UNSPECIFIED - 未指定 */

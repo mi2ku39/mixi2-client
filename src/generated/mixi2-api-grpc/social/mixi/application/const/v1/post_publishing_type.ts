@@ -6,8 +6,6 @@
 
 /* eslint-disable */
 
-export const protobufPackage = "social.mixi.application.const.v1";
-
 /** ポストの投稿先設定を示す列挙型 */
 export enum PostPublishingType {
   /** POST_PUBLISHING_TYPE_UNSPECIFIED - 未指定（自分のフォロワーのタイムラインに公開） */

@@ -6,8 +6,6 @@
 
 /* eslint-disable */
 
-export const protobufPackage = "social.mixi.application.const.v1";
-
 /** ポストに添付されるメディア種別を示す列挙型 */
 export enum PostMediaType {
   /** POST_MEDIA_TYPE_UNSPECIFIED - 未指定 */

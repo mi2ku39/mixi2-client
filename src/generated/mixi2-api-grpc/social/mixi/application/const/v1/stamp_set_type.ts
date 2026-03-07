@@ -6,8 +6,6 @@
 
 /* eslint-disable */
 
-export const protobufPackage = "social.mixi.application.const.v1";
-
 /** 公式スタンプセットの種別を示す列挙型 */
 export enum StampSetType {
   /** STAMP_SET_TYPE_UNSPECIFIED - 未指定 */

@@ -6,8 +6,6 @@
 
 /* eslint-disable */
 
-export const protobufPackage = "social.mixi.application.const.v1";
-
 /** ポストを閲覧できるかどうかを示す列挙型 */
 export enum PostVisibility {
   /** POST_VISIBILITY_UNSPECIFIED - 未指定 */

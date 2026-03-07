@@ -6,8 +6,6 @@
 
 /* eslint-disable */
 
-export const protobufPackage = "social.mixi.application.const.v1";
-
 /** ポストの公開設定を示す列挙型 */
 export enum PostAccessLevel {
   /** POST_ACCESS_LEVEL_UNSPECIFIED - 未指定 */

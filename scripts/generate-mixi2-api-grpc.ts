@@ -29,6 +29,15 @@ function toPosixPath(path: string): string {
   return path.split('\\').join('/')
 }
 
+function createNamespaceExportName(modulePath: string): string {
+  const normalizedPath = modulePath.replace(/^mixi2-api-grpc\//u, '')
+  const baseName = normalizedPath.replace(/[^a-zA-Z0-9]/gu, '_')
+  if (/^[0-9]/u.test(baseName)) {
+    return `_${baseName}`
+  }
+  return baseName
+}
+
 async function collectProtoFiles(dir: string): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true })
   const files = await Promise.all(
@@ -120,6 +129,7 @@ async function generateGrpcImplementationFromProto(): Promise<void> {
     '      - env=node',
     '      - esModuleInterop=true',
     '      - outputServices=grpc-js',
+    '      - exportCommonSymbols=false',
     '      - outputEncodeMethods=true',
     '      - outputJsonMethods=true',
     '      - outputPartialMethods=true',
@@ -155,11 +165,20 @@ async function writeBarrelFile(): Promise<number> {
     throw new Error('No TypeScript files were generated from proto files.')
   }
 
-  const exportLines = generatedFiles
+  const modulePaths = generatedFiles
     .map((absolutePath) => relative(dirname(outputFile), absolutePath))
     .map((path) => toPosixPath(path).replace(/\.ts$/u, ''))
     .sort((a, b) => a.localeCompare(b))
+  const namedExportLines = modulePaths
+    .filter((path) => !path.includes('/service/'))
     .map((path) => `export * from './${path}'`)
+  const namespaceExportLines = modulePaths
+    .filter((path) => path.includes('/service/'))
+    .map((path) => {
+      const namespaceName = createNamespaceExportName(path)
+      return `export * as ${namespaceName} from './${path}'`
+    })
+  const exportLines = [...namedExportLines, ...namespaceExportLines]
 
   const banner = [
     '/**',
