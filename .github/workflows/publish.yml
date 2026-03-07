@@ -33,6 +33,11 @@ jobs:
       - name: Setup project
         uses: ./.github/actions/setup-pnpm
 
+      - name: Configure git user for release commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Run checks
         run: |
           pnpm run build
