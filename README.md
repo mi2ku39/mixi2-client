@@ -35,7 +35,7 @@ const authorization = createAuthorizationHeader(process.env.MIXI2_ACCESS_TOKEN ?
 
 ## クライアント初期化
 
-`Mixi2Client` には `baseUrl` と `accessToken`、および生成済みの RPC クライアントを渡します。
+`Mixi2Client` には `baseUrl` と `accessToken` を渡すだけで利用できます。
 
 ```ts
 import { Mixi2Client } from '@mi2ku39/mixi2-client'
@@ -43,16 +43,10 @@ import { Mixi2Client } from '@mi2ku39/mixi2-client'
 const client = new Mixi2Client({
   baseUrl: 'https://api.mixi.social',
   accessToken: process.env.MIXI2_ACCESS_TOKEN ?? '',
-  serviceClientFactory: () => {
-    throw new Error('ApplicationApiClient を注入してください')
-  },
-  streamServiceClientFactory: () => {
-    throw new Error('ApplicationStreamClient を注入してください')
-  },
 })
 ```
 
-> `serviceClient` または `serviceClientFactory` は必須です。`subscribeEvents` を使う場合は `streamServiceClient` または `streamServiceClientFactory` も必須です。
+必要に応じて、`serviceClient` / `serviceClientFactory` と `streamServiceClient` / `streamServiceClientFactory` を注入して挙動を差し替えられます。
 
 ## 各 RPC の最小サンプル
 
