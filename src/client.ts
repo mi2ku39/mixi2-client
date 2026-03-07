@@ -30,6 +30,7 @@ import {
 } from './rpc/defaultServiceClients'
 import { sendChatMessage, type SendChatMessageInput } from './rpc/sendChatMessage'
 import { createRpcTransport, type RpcTransport, type RpcTransportOptions } from './transport'
+import { createAuthorizationHeader } from './auth'
 
 export type Mixi2ClientInitOptions = RpcTransportOptions & {
   serviceClient?: ApplicationApiClient
@@ -48,7 +49,10 @@ export class Mixi2Client {
       throw new ValidationError('baseUrl is required')
     }
 
-    this.transport = createRpcTransport(options)
+    this.transport = createRpcTransport({
+      ...options,
+      authorizationHeader: createAuthorizationHeader(options.accessToken),
+    })
     this.serviceClient =
       options.serviceClient ??
       options.serviceClientFactory?.(this.transport) ??
