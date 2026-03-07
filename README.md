@@ -84,7 +84,7 @@ const authorization = createAuthorizationHeader(process.env.MIXI2_ACCESS_TOKEN ?
 
 ```bash
 pnpm install
-pnpm tsx examples/rpc-minimal.ts
+node --experimental-strip-types examples/rpc-minimal.ts
 ```
 
 サンプル内容（抜粋）:
@@ -116,19 +116,19 @@ console.log(usersResponse.users)
 - Install dependencies:
 
 ```bash
-npm install
+pnpm install
 ```
 
 - Run the unit tests:
 
 ```bash
-npm run test
+pnpm run test
 ```
 
 - Build the library:
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 ## リリース運用
@@ -143,7 +143,7 @@ Initialize submodules and run the generation script:
 
 ```bash
 git submodule update --init --recursive
-npm run generate:mixi2-types
+pnpm run generate:mixi2-grpc
 ```
 
-The script searches known OpenAPI schema locations under `mixi2-api/` and writes generated TypeScript definitions to `src/generated/mixi2-api.ts`.
+`generate:mixi2-grpc` は `ts-proto` + `@grpc/grpc-js` 用の実装を生成し、`src/generated/mixi2-api-grpc.ts` に barrel export を書き出します。

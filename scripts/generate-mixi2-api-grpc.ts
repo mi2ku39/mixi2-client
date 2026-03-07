@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises'
-import { dirname, extname, relative, resolve } from 'node:path'
+import { dirname, extname, relative, resolve, delimiter } from 'node:path'
 import process from 'node:process'
 import { tmpdir } from 'node:os'
 import { promisify } from 'node:util'
@@ -11,36 +11,43 @@ const execFileAsync = promisify(execFile)
 const rootDir = process.cwd()
 const submoduleDir = resolve(rootDir, 'mixi2-api')
 const protoRootDir = resolve(submoduleDir, 'proto')
-const generatedDir = resolve(rootDir, 'src/generated/mixi2-api')
-const outputFile = resolve(rootDir, 'src/generated/mixi2-api.ts')
+const generatedDir = resolve(rootDir, 'src/generated/mixi2-api-grpc')
+const outputFile = resolve(rootDir, 'src/generated/mixi2-api-grpc.ts')
+const binDir = resolve(rootDir, 'node_modules/.bin')
 const bufCliPath = resolve(
   rootDir,
   'node_modules/.bin',
   process.platform === 'win32' ? 'buf.cmd' : 'buf',
 )
-
-async function ensureBufCliAvailable(): Promise<void> {
-  if (!existsSync(bufCliPath)) {
-    throw new Error(
-      [
-        '`@bufbuild/buf` is not installed.',
-        'Run `npm install` first and then retry `npm run generate:mixi2-types`.',
-      ].join(' '),
-    )
-  }
-
-  try {
-    await execFileAsync(bufCliPath, ['--version'], {
-      cwd: rootDir,
-      maxBuffer: 1024 * 1024,
-    })
-  } catch {
-    throw new Error('Failed to execute local buf CLI from @bufbuild/buf package.')
-  }
-}
+const tsProtoPluginPath = resolve(
+  rootDir,
+  'node_modules/.bin',
+  process.platform === 'win32' ? 'protoc-gen-ts_proto.cmd' : 'protoc-gen-ts_proto',
+)
 
 function toPosixPath(path: string): string {
   return path.split('\\').join('/')
+}
+
+async function collectProtoFiles(dir: string): Promise<string[]> {
+  const entries = await readdir(dir, { withFileTypes: true })
+  const files = await Promise.all(
+    entries.map(async (entry): Promise<string[]> => {
+      const absolutePath = resolve(dir, entry.name)
+      if (entry.isDirectory()) {
+        return collectProtoFiles(absolutePath)
+      }
+      if (!entry.isFile()) {
+        return []
+      }
+      if (extname(entry.name) !== '.proto') {
+        return []
+      }
+      return [absolutePath]
+    }),
+  )
+
+  return files.flat()
 }
 
 async function collectTypeScriptFiles(dir: string): Promise<string[]> {
@@ -67,29 +74,74 @@ async function collectTypeScriptFiles(dir: string): Promise<string[]> {
   return files.flat()
 }
 
-async function generateTypesFromProto(): Promise<void> {
+async function ensureGeneratorToolsAvailable(): Promise<void> {
+  if (!existsSync(bufCliPath)) {
+    throw new Error(
+      [
+        '`@bufbuild/buf` is not installed.',
+        'Run `pnpm install` first and then retry `pnpm run generate:mixi2-grpc`.',
+      ].join(' '),
+    )
+  }
+
+  if (!existsSync(tsProtoPluginPath)) {
+    throw new Error(
+      [
+        '`ts-proto` is not installed.',
+        'Run `pnpm install` first and then retry `pnpm run generate:mixi2-grpc`.',
+      ].join(' '),
+    )
+  }
+
+  try {
+    await execFileAsync(bufCliPath, ['--version'], {
+      cwd: rootDir,
+      maxBuffer: 1024 * 1024,
+    })
+  } catch {
+    throw new Error('Failed to execute local buf CLI from @bufbuild/buf package.')
+  }
+}
+
+async function generateGrpcImplementationFromProto(): Promise<void> {
   await mkdir(dirname(outputFile), { recursive: true })
   await rm(generatedDir, { recursive: true, force: true })
+  await mkdir(generatedDir, { recursive: true })
 
-  const templateDir = await mkdtemp(resolve(tmpdir(), 'mixi2-api-types-'))
+  const templateDir = await mkdtemp(resolve(tmpdir(), 'mixi2-api-grpc-'))
   const templatePath = resolve(templateDir, 'buf.gen.yaml')
   const outputRelativePath = toPosixPath(relative(rootDir, generatedDir))
   const template = [
     'version: v2',
     'plugins:',
-    '  - remote: buf.build/bufbuild/es',
+    '  - local: protoc-gen-ts_proto',
     `    out: ${outputRelativePath}`,
     '    opt:',
-    '      - target=ts',
-    '      - import_extension=none',
+    '      - env=node',
+    '      - esModuleInterop=true',
+    '      - outputServices=grpc-js',
+    '      - outputEncodeMethods=true',
+    '      - outputJsonMethods=true',
+    '      - outputPartialMethods=true',
     '',
   ].join('\n')
 
   await writeFile(templatePath, template, 'utf8')
 
+  const protoFiles = await collectProtoFiles(protoRootDir)
+  if (protoFiles.length === 0) {
+    throw new Error('No proto files found under mixi2-api/proto.')
+  }
+
+  const pathWithBin = [binDir, process.env.PATH].filter(Boolean).join(delimiter)
+
   try {
     await execFileAsync(bufCliPath, ['generate', protoRootDir, '--template', templatePath], {
       cwd: rootDir,
+      env: {
+        ...process.env,
+        PATH: pathWithBin,
+      },
       maxBuffer: 10 * 1024 * 1024,
     })
   } finally {
@@ -133,8 +185,8 @@ async function main(): Promise<void> {
     )
   }
 
-  await ensureBufCliAvailable()
-  await generateTypesFromProto()
+  await ensureGeneratorToolsAvailable()
+  await generateGrpcImplementationFromProto()
   const generatedCount = await writeBarrelFile()
 
   const relativeOutputPath = relative(rootDir, outputFile)
