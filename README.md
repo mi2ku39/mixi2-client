@@ -111,6 +111,25 @@ const usersResponse = await getUsers(serviceClient, userIds)
 console.log(usersResponse.users)
 ```
 
+## アクセストークン取得 + getPosts 実行サンプル
+
+`src/auth` の `getAccessTokenFromEnv` を利用してトークンを取得し、そのトークンで `getPosts` を実行するサンプルを `examples/get-access-token-and-get-posts.ts` に用意しています。
+
+必要な環境変数:
+
+- `CLIENT_ID`
+- `CLIENT_SECRET`
+- `TOKEN_URL`
+- `MIXI2_BASE_URL`
+- `MIXI2_POST_IDS`（カンマ区切り、例: `post-1,post-2`）
+- `MIXI2_SCOPE`（任意）
+
+実行例:
+
+```bash
+node --experimental-strip-types examples/get-access-token-and-get-posts.ts
+```
+
 ## Development
 
 - Install dependencies:
