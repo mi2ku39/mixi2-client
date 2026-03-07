@@ -1,10 +1,12 @@
 import {
   InterceptingCall,
   Metadata,
+  status,
   credentials,
   type ChannelCredentials,
   type ClientOptions,
   type Interceptor,
+  type StatusObject,
 } from '@grpc/grpc-js'
 
 import {
@@ -15,6 +17,7 @@ import {
   ApplicationServiceClient as ApplicationStreamServiceClient,
   type ApplicationServiceClient as ApplicationStreamClient,
 } from '../generated/mixi2-api-grpc/social/mixi/application/service/application_stream/v1/service'
+import type { AccessTokenProvider } from '../auth'
 
 export type DefaultServiceClient = {
   applicationApi: ApplicationApiClient
@@ -25,6 +28,7 @@ export type CreateDefaultServiceClientOptions = {
   baseUrl: string
   headers?: Record<string, string>
   accessToken?: string
+  accessTokenProvider?: AccessTokenProvider
 }
 
 function toGrpcEndpoint(baseUrl: string): { address: string; credentials: ChannelCredentials } {
@@ -54,19 +58,63 @@ function createMetadata(options: CreateDefaultServiceClientOptions): Metadata {
     metadata.set(key, value)
   }
 
-  if (options.accessToken && !metadata.get('authorization').length) {
-    metadata.set('authorization', `Bearer ${options.accessToken}`)
-  }
-
   return metadata
 }
 
-function createClientOptions(defaultMetadata: Metadata): Partial<ClientOptions> {
+async function resolveAccessToken(options: CreateDefaultServiceClientOptions): Promise<string | undefined> {
+  if (typeof options.accessTokenProvider === 'function') {
+    const accessToken = await options.accessTokenProvider()
+
+    if (typeof accessToken !== 'string' || accessToken.length === 0) {
+      throw new Error('accessTokenProvider must return a non-empty string')
+    }
+
+    return accessToken
+  }
+
+  return options.accessToken
+}
+
+function createProviderErrorStatus(error: unknown): StatusObject {
+  return {
+    code: status.UNAUTHENTICATED,
+    details:
+      error instanceof Error
+        ? `Failed to resolve access token from accessTokenProvider: ${error.message}`
+        : 'Failed to resolve access token from accessTokenProvider',
+    metadata: new Metadata(),
+  }
+}
+
+function createClientOptions(
+  options: CreateDefaultServiceClientOptions,
+  defaultMetadata: Metadata,
+): Partial<ClientOptions> {
   const interceptor: Interceptor = (interceptOptions, nextCall) => {
     return new InterceptingCall(nextCall(interceptOptions), {
       start: (metadata, listener, next) => {
         metadata.merge(defaultMetadata)
-        next(metadata, listener)
+
+        if (metadata.get('authorization').length > 0) {
+          next(metadata, listener)
+          return
+        }
+
+        void resolveAccessToken(options)
+          .then((accessToken) => {
+            if (accessToken) {
+              metadata.set('authorization', `Bearer ${accessToken}`)
+            }
+
+            next(metadata, listener)
+          })
+          .catch((error: unknown) => {
+            next(metadata, {
+              onReceiveStatus: (_, nextReceiveStatus) => {
+                nextReceiveStatus(createProviderErrorStatus(error))
+              },
+            })
+          })
       },
     })
   }
@@ -78,7 +126,7 @@ function createClientOptions(defaultMetadata: Metadata): Partial<ClientOptions> 
 
 export function createDefaultServiceClient(options: CreateDefaultServiceClientOptions): DefaultServiceClient {
   const { address, credentials: channelCredentials } = toGrpcEndpoint(options.baseUrl)
-  const clientOptions = createClientOptions(createMetadata(options))
+  const clientOptions = createClientOptions(options, createMetadata(options))
 
   return {
     applicationApi: new ApplicationApiServiceClient(address, channelCredentials, clientOptions),
