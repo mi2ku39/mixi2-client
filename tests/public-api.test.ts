@@ -4,15 +4,12 @@ import * as root from '../src'
 import * as generated from '../src/generated/mixi2-api-grpc.ts'
 
 describe('public api barrel exports', () => {
-  test('re-exports symbols from generated barrel', () => {
-    expect(root.EventType).toBe(generated.EventType)
-    expect(root.EventReason).toBe(generated.EventReason)
-    expect(root.PostVisibility).toBe(generated.PostVisibility)
+  test('re-exports generated root object from generated barrel', () => {
+    expect(root.mixi2ApiGrpc).toBe(generated.mixi2ApiGrpc)
   })
 
-  test('keeps stable service namespace exports', () => {
-    const serviceNamespaces = Object.keys(root)
-      .filter((key) => key.startsWith('social_mixi_application_service_'))
+  test('keeps stable grouped service namespace keys', () => {
+    const serviceNamespaces = Object.keys(root.mixi2ApiGrpc.service.social.mixi.application)
       .sort()
 
     expect(serviceNamespaces).toMatchSnapshot()

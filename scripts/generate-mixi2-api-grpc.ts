@@ -29,13 +29,125 @@ function toPosixPath(path: string): string {
   return path.split('\\').join('/')
 }
 
-function createNamespaceExportName(modulePath: string): string {
+function createModuleImportName(modulePath: string): string {
   const normalizedPath = modulePath.replace(/^mixi2-api-grpc\//u, '')
-  const baseName = normalizedPath.replace(/[^a-zA-Z0-9]/gu, '_')
+  const baseName = `module_${normalizedPath.replace(/[^a-zA-Z0-9]/gu, '_')}`
   if (/^[0-9]/u.test(baseName)) {
     return `_${baseName}`
   }
   return baseName
+}
+
+type ModuleCategory = 'const' | 'model' | 'service'
+
+interface ModuleEntry {
+  category: ModuleCategory
+  importName: string
+  modulePath: string
+  objectPath: string[]
+}
+
+interface ObjectTreeNode {
+  children: Map<string, ObjectTreeNode>
+  moduleImportName?: string
+}
+
+function createTreeNode(): ObjectTreeNode {
+  return {
+    children: new Map(),
+  }
+}
+
+function classifyModulePath(modulePath: string): { category: ModuleCategory; objectPath: string[] } {
+  const normalizedPath = modulePath.replace(/^mixi2-api-grpc\//u, '')
+  const segments = normalizedPath.split('/')
+  const categoryIndex = segments.findIndex(
+    (segment) => segment === 'const' || segment === 'model' || segment === 'service',
+  )
+
+  if (categoryIndex === -1) {
+    return {
+      category: 'model',
+      objectPath: segments,
+    }
+  }
+
+  const category = segments[categoryIndex] as ModuleCategory
+  return {
+    category,
+    objectPath: [...segments.slice(0, categoryIndex), ...segments.slice(categoryIndex + 1)],
+  }
+}
+
+function insertIntoObjectTree(root: ObjectTreeNode, objectPath: string[], importName: string): void {
+  let currentNode = root
+  for (const segment of objectPath) {
+    const existingNode = currentNode.children.get(segment)
+    if (existingNode) {
+      currentNode = existingNode
+      continue
+    }
+    const nextNode = createTreeNode()
+    currentNode.children.set(segment, nextNode)
+    currentNode = nextNode
+  }
+
+  if (currentNode.moduleImportName) {
+    throw new Error(
+      `Duplicate module object path detected: ${objectPath.join('/')} (${currentNode.moduleImportName}, ${importName})`,
+    )
+  }
+  currentNode.moduleImportName = importName
+}
+
+function renderObjectTree(node: ObjectTreeNode, indentLevel: number): string {
+  if (node.children.size === 0) {
+    return node.moduleImportName ?? '{}'
+  }
+
+  const indent = '  '.repeat(indentLevel)
+  const childIndent = '  '.repeat(indentLevel + 1)
+  const lines = ['{']
+
+  if (node.moduleImportName) {
+    lines.push(`${childIndent}"__module": ${node.moduleImportName},`)
+  }
+
+  const sortedChildren = [...node.children.entries()].sort(([a], [b]) => a.localeCompare(b))
+  for (const [key, childNode] of sortedChildren) {
+    lines.push(`${childIndent}${JSON.stringify(key)}: ${renderObjectTree(childNode, indentLevel + 1)},`)
+  }
+
+  lines.push(`${indent}}`)
+  return lines.join('\n')
+}
+
+function createModuleEntries(modulePaths: string[]): ModuleEntry[] {
+  const usedImportNames = new Map<string, number>()
+  return modulePaths.map((modulePath) => {
+    const baseImportName = createModuleImportName(modulePath)
+    const duplicateCount = usedImportNames.get(baseImportName) ?? 0
+    usedImportNames.set(baseImportName, duplicateCount + 1)
+    const importName = duplicateCount === 0 ? baseImportName : `${baseImportName}_${duplicateCount + 1}`
+    const { category, objectPath } = classifyModulePath(modulePath)
+    return {
+      category,
+      importName,
+      modulePath,
+      objectPath,
+    }
+  })
+}
+
+function renderCategoryObject(moduleEntries: ModuleEntry[], category: ModuleCategory): string {
+  const rootNode = createTreeNode()
+  for (const moduleEntry of moduleEntries) {
+    if (moduleEntry.category !== category) {
+      continue
+    }
+    insertIntoObjectTree(rootNode, moduleEntry.objectPath, moduleEntry.importName)
+  }
+  return renderObjectTree(rootNode, 2)
 }
 
 async function collectProtoFiles(dir: string): Promise<string[]> {
@@ -169,16 +281,19 @@ async function writeBarrelFile(): Promise<number> {
     .map((absolutePath) => relative(dirname(outputFile), absolutePath))
     .map((path) => toPosixPath(path).replace(/\.ts$/u, ''))
     .sort((a, b) => a.localeCompare(b))
-  const namedExportLines = modulePaths
-    .filter((path) => !path.includes('/service/'))
-    .map((path) => `export * from './${path}'`)
-  const namespaceExportLines = modulePaths
-    .filter((path) => path.includes('/service/'))
-    .map((path) => {
-      const namespaceName = createNamespaceExportName(path)
-      return `export * as ${namespaceName} from './${path}'`
-    })
-  const exportLines = [...namedExportLines, ...namespaceExportLines]
+  const moduleEntries = createModuleEntries(modulePaths)
+  const importLines = moduleEntries.map(
+    (moduleEntry) => `import * as ${moduleEntry.importName} from './${moduleEntry.modulePath}'`,
+  )
+
+  const mixi2ApiGrpcObject = [
+    'export const mixi2ApiGrpc = {',
+    `  const: ${renderCategoryObject(moduleEntries, 'const')},`,
+    `  model: ${renderCategoryObject(moduleEntries, 'model')},`,
+    `  service: ${renderCategoryObject(moduleEntries, 'service')},`,
+    '} as const',
+    '',
+  ].join('\n')
 
   const banner = [
     '/**',
@@ -188,7 +303,7 @@ async function writeBarrelFile(): Promise<number> {
     '',
   ].join('\n')
 
-  await writeFile(outputFile, `${banner}${exportLines.join('\n')}\n`, 'utf8')
+  await writeFile(outputFile, `${banner}${importLines.join('\n')}\n\n${mixi2ApiGrpcObject}`, 'utf8')
   return generatedFiles.length
 }
 

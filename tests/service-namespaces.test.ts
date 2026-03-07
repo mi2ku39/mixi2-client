@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'vitest'
 
-import {
-  social_mixi_application_service_application_api_v1_service as applicationApi,
-  social_mixi_application_service_application_stream_v1_service as applicationStream,
-  social_mixi_application_service_client_endpoint_v1_service as clientEndpoint,
-} from '../src'
+import { mixi2ApiGrpc } from '../src'
+
+const applicationApi = mixi2ApiGrpc.service.social.mixi.application.application_api.v1.service
+const applicationStream = mixi2ApiGrpc.service.social.mixi.application.application_stream.v1.service
+const clientEndpoint = mixi2ApiGrpc.service.social.mixi.application.client_endpoint.v1.service
 
 describe('service namespace exports', () => {
   test('keeps stable application api service definitions', () => {

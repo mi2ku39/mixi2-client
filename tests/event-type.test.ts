@@ -1,13 +1,10 @@
 import { describe, expect, test } from 'vitest'
 
-import {
-  EventReason,
-  EventType,
-  eventReasonFromJSON,
-  eventReasonToJSON,
-  eventTypeFromJSON,
-  eventTypeToJSON,
-} from '../src'
+import { mixi2ApiGrpc } from '../src'
+
+const eventTypeModule = mixi2ApiGrpc.const.social.mixi.application.v1.event_type
+const { EventReason, EventType, eventReasonFromJSON, eventReasonToJSON, eventTypeFromJSON, eventTypeToJSON } =
+  eventTypeModule
 
 describe('event enum json mapping', () => {
   test('keeps stable EventType json mapping table', () => {

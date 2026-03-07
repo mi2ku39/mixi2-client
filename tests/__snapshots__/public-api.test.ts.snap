@@ -1,9 +1,9 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`public api barrel exports > keeps stable service namespace exports 1`] = `
+exports[`public api barrel exports > keeps stable grouped service namespace keys 1`] = `
 [
-  "social_mixi_application_service_application_api_v1_service",
-  "social_mixi_application_service_application_stream_v1_service",
-  "social_mixi_application_service_client_endpoint_v1_service",
+  "application_api",
+  "application_stream",
+  "client_endpoint",
 ]
 `;
