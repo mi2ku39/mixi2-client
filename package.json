@@ -40,6 +40,9 @@
     "prepublishOnly": "pnpm run build",
     "generate:mixi2-types": "tsx scripts/generate-mixi2-api-types.ts"
   },
+  "dependencies": {
+    "dotenv": "^17.2.3"
+  },
   "devDependencies": {
     "@bufbuild/buf": "^1.59.0",
     "@bufbuild/protobuf": "^2.11.0",

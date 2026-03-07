@@ -1,5 +1,13 @@
 export { Mixi2Client, type Mixi2ClientInitOptions } from './client'
-export { createAuthorizationHeader } from './auth'
+export {
+  createAuthorizationHeader,
+  issueOAuth2AccessToken,
+  issueOAuth2AccessTokenFromEnv,
+  loadOAuth2Env,
+  type OAuth2Env,
+  type OAuth2EnvRequestOptions,
+  type OAuth2TokenRequestOptions,
+} from './auth'
 export { createRpcTransport, type RpcCallOptions, type RpcTransport, type RpcTransportOptions } from './transport'
 export { TransportError, ValidationError } from './errors'
 export { type ApplicationApiClient } from './rpc/applicationApiClient'
