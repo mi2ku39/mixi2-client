@@ -1,11 +1,13 @@
 import {
   addStampToPost,
+  createAuthorizationHeader,
   createPost,
   getPostMediaStatus,
   getPosts,
   getStamps,
   getUsers,
   initiatePostMediaUpload,
+  issueOAuth2AccessTokenFromEnv,
   sendChatMessage,
   type ApplicationApiClient,
 } from '../src'
@@ -23,6 +25,11 @@ const serviceClient: ApplicationApiClient = {
 }
 
 async function main() {
+  const { accessToken, streamAddress } = await issueOAuth2AccessTokenFromEnv()
+  const authorizationHeader = createAuthorizationHeader(accessToken)
+  console.log('stream address:', streamAddress)
+  console.log('authorization header:', authorizationHeader)
+
   const users = await getUsers(serviceClient, ['user-1'])
   console.log('getUsers result:', users.users)
 
