@@ -11,6 +11,7 @@ export type RpcCallOptions = {
 export type RpcTransportOptions = {
   baseUrl: string
   accessToken: string
+  authorizationHeader?: string
   fetch?: typeof globalThis.fetch
   timeoutMs?: number
   userAgent?: string
@@ -25,7 +26,7 @@ export type RpcTransport = {
 export function createRpcTransport(options: RpcTransportOptions): RpcTransport {
   const fetchFn = options.fetch ?? globalThis.fetch
   const defaultHeaders = new Headers({
-    Authorization: createAuthorizationHeader(options.accessToken),
+    Authorization: options.authorizationHeader ?? createAuthorizationHeader(options.accessToken),
   })
 
   if (options.userAgent) {
