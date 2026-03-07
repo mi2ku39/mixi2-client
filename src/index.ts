@@ -1,3 +1,3 @@
-export function fn() {
-  return 'Hello, tsdown!'
-}
+export * from './generated/mixi2-api-grpc'
+export * from './auth'
+export * from './client'

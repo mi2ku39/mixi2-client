@@ -1,4 +1,27 @@
-node_modules
-dist
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build artifacts
+dist/
+coverage/
+*.tsbuildinfo
+*.tgz
+
+# Logs and caches
 *.log
+.npm-cache/
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Editor and OS files
+.vscode/
+.idea/
 .DS_Store

@@ -1,114 +1,152 @@
-# tsdown-starter
+# @mi2ku39/mixi2-client
 
-TypeScript client types and RPC utilities for the mixi2 API.
-
-## イベント購読 (`Mixi2Client#subscribeEvents`)
-
-`Mixi2Client#subscribeEvents(options)` は `AsyncIterable<Event>` を返し、サーバーストリーミングのイベントを順次受け取れます。
-
-- `options.signal` に `AbortSignal` を渡すと、購読をキャンセルできます。
-- 返却される要素は `Event` 型そのままのため、`event.body.case` で `pingEvent` を含むイベント種別を利用側で判別できます。
-
-### 再接続戦略
-
-本 SDK は **自動再接続を内包しません**。再接続ポリシー（指数バックオフ、最大試行回数、終了条件など）はアプリケーション側で実装してください。
-
-理由:
-
-- プロダクトごとに許容する遅延・再試行回数・監視方針が異なるため
-- 認証更新やネットワーク制約に応じて、適切な制御が利用側依存になるため
+TypeScript client types and gRPC utilities for the mixi2 API.
 
 ## インストール
 
 ```bash
-pnpm add mixi2-ts
+pnpm add @mi2ku39/mixi2-client
 ```
 
-開発環境でこのリポジトリを直接利用する場合:
-
-```bash
-git clone https://github.com/mixi2ts/mixi2-ts.git
-cd mixi2-ts
-pnpm install
-```
-
-## ESM import について
-
-このパッケージは ESM として公開されます（`"type": "module"`）。
-README内の import 例はすべて ESM 形式です。
+## 最小初期化（`baseUrl` + `accessToken` のみ）
 
 ```ts
-import { Mixi2Client, createAuthorizationHeader } from 'mixi2-ts'
-```
+import { createDefaultServiceClient } from '@mi2ku39/mixi2-client'
 
-## 初期化方法
-
-`Mixi2Client` を使って、`baseUrl`（APIエンドポイント）と `accessToken`（OAuth2アクセストークン）を指定して初期化します。
-
-```ts
-import { Mixi2Client } from 'mixi2-ts'
-
-const client = new Mixi2Client({
+const serviceClient = createDefaultServiceClient({
   baseUrl: 'https://api.mixi.social',
   accessToken: process.env.MIXI2_ACCESS_TOKEN ?? '',
-  serviceClientFactory: () => {
-    throw new Error('実際のRPCクライアントを注入してください')
+})
+```
+
+## アクセストークンの動的取得（`accessTokenProvider`）
+
+`createDefaultServiceClient` は `accessTokenProvider: () => Promise<string> | string` を受け付けます。
+
+```ts
+import { createDefaultServiceClient } from '@mi2ku39/mixi2-client'
+
+const serviceClient = createDefaultServiceClient({
+  baseUrl: process.env.MIXI2_BASE_URL ?? '',
+  accessTokenProvider: async () => {
+    const token = await refreshAccessTokenSomehow()
+    return token
   },
 })
 ```
 
-> `serviceClient` または `serviceClientFactory` は必須です。生成済みの gRPC/Connect クライアントを注入して利用してください。
+トークン指定の優先順位は次の通りです。
 
-## OAuth2トークン設定方法
+1. `headers.authorization`（明示指定）
+2. `accessTokenProvider`
+3. `accessToken`
 
-アクセストークンは環境変数経由で扱うのが安全です。例:
+`accessTokenProvider` はリクエストごとに評価されます。
+そのため、401（gRPC の `UNAUTHENTICATED`）で失敗した後に利用側で同じ API を再試行すると、provider が再実行され、新しいトークンを使った再取得フローを実装できます。
 
-```bash
-export MIXI2_ACCESS_TOKEN='your-oauth2-access-token'
-```
-
-`createAuthorizationHeader` を使うと `Authorization` ヘッダー文字列を生成できます。
+## 30秒で試す（初期化 + 1つの API 呼び出し）
 
 ```ts
-import { createAuthorizationHeader } from 'mixi2-ts'
+import type { GetUsersResponse } from '@mi2ku39/mixi2-client'
+import { createDefaultServiceClient } from '@mi2ku39/mixi2-client'
 
-const authorization = createAuthorizationHeader(process.env.MIXI2_ACCESS_TOKEN ?? '')
-// => "Bearer your-oauth2-access-token"
+function getRequiredEnv(name: string): string {
+  const value = process.env[name]
+  if (!value) throw new Error(`Missing environment variable: ${name}`)
+  return value
+}
+
+async function getUsersOnce(baseUrl: string, accessToken: string, userId: string): Promise<GetUsersResponse> {
+  const serviceClient = createDefaultServiceClient({ baseUrl, accessToken })
+
+  try {
+    return await new Promise<GetUsersResponse>((resolve, reject) => {
+      serviceClient.applicationApi.getUsers({ userIdList: [userId] }, (error, result) => {
+        if (error) {
+          reject(error)
+          return
+        }
+
+        resolve(result)
+      })
+    })
+  } finally {
+    serviceClient.applicationApi.close()
+    serviceClient.applicationStream.close()
+  }
+}
+
+const response = await getUsersOnce(
+  getRequiredEnv('MIXI2_BASE_URL'),
+  getRequiredEnv('MIXI2_ACCESS_TOKEN'),
+  getRequiredEnv('MIXI2_USER_ID'),
+)
+
+console.log(response.users)
 ```
 
-## 各RPCの最小実行サンプル
+## イベント購読（`applicationStream.subscribeEvents`）
 
-最小サンプルを `examples/rpc-minimal.ts` に用意しています。各RPCについて「入力」「呼び出し」「結果利用」を1つずつ含みます。
+`createDefaultServiceClient` で生成した `applicationStream` からサーバーストリーミングを購読できます。
 
-実行手順:
+```ts
+import { createDefaultServiceClient } from '@mi2ku39/mixi2-client'
+
+const serviceClient = createDefaultServiceClient({
+  baseUrl: process.env.MIXI2_BASE_URL ?? '',
+  accessToken: process.env.MIXI2_ACCESS_TOKEN ?? '',
+})
+
+const stream = serviceClient.applicationStream.subscribeEvents({})
+
+stream.on('data', (message) => {
+  console.log('event:', message.event)
+})
+
+stream.on('error', (error) => {
+  console.error('stream error:', error)
+})
+
+stream.on('end', () => {
+  console.log('stream ended')
+})
+```
+
+> 再接続戦略（指数バックオフ、最大試行回数、終了条件など）は SDK ではなく利用側で実装してください。
+
+## OAuth2 アクセストークン取得
+
+`getAccessTokenFromEnv` を利用すると、環境変数（`CLIENT_ID` / `CLIENT_SECRET` / `TOKEN_URL`）からトークンを取得できます。
+
+```ts
+import { getAccessTokenFromEnv } from '@mi2ku39/mixi2-client'
+
+const token = await getAccessTokenFromEnv({
+  scope: process.env.MIXI2_SCOPE,
+})
+
+console.log(token.accessToken)
+```
+
+## examples
+
+- `examples/create-default-service-client.ts`
+  - 既存アクセストークンで `createDefaultServiceClient` を初期化し、`getUsers` を 1 回実行します。
+- `examples/create-default-service-client-with-provider.ts`
+  - `accessTokenProvider` で都度トークンを取得し、`UNAUTHENTICATED` 発生時に再試行する例です。
+- `examples/get-access-token.ts`
+  - `getAccessTokenFromEnv` でトークンを取得します。
+- `examples/get-access-token-and-get-posts.ts`
+  - `getAccessTokenFromEnv` で取得したトークンを使って `getPosts` を実行します。
+
+実行例:
 
 ```bash
 pnpm install
-pnpm tsx examples/rpc-minimal.ts
-```
-
-サンプル内容（抜粋）:
-
-```ts
-import {
-  addStampToPost,
-  createPost,
-  getPostMediaStatus,
-  getPosts,
-  getStamps,
-  getUsers,
-  initiatePostMediaUpload,
-  sendChatMessage,
-} from 'mixi2-ts'
-
-// 1) 入力
-const userIds = ['user-1']
-
-// 2) 呼び出し
-const usersResponse = await getUsers(serviceClient, userIds)
-
-// 3) 結果利用
-console.log(usersResponse.users)
+node --experimental-strip-types examples/create-default-service-client.ts
+node --experimental-strip-types examples/create-default-service-client-with-provider.ts
+node --experimental-strip-types examples/get-access-token.ts
+node --experimental-strip-types examples/get-access-token-and-get-posts.ts
 ```
 
 ## Development
@@ -116,19 +154,19 @@ console.log(usersResponse.users)
 - Install dependencies:
 
 ```bash
-npm install
+pnpm install
 ```
 
 - Run the unit tests:
 
 ```bash
-npm run test
+pnpm run test
 ```
 
 - Build the library:
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 ## リリース運用
@@ -143,7 +181,7 @@ Initialize submodules and run the generation script:
 
 ```bash
 git submodule update --init --recursive
-npm run generate:mixi2-types
+pnpm run generate:mixi2-grpc
 ```
 
-The script searches known OpenAPI schema locations under `mixi2-api/` and writes generated TypeScript definitions to `src/generated/mixi2-api.ts`.
+`generate:mixi2-grpc` は `ts-proto` + `@grpc/grpc-js` 用の実装を生成し、`src/generated/mixi2-api-grpc.ts` に barrel export を書き出します。

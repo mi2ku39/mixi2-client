@@ -1,27 +1,23 @@
 {
   "name": "@mi2ku39/mixi2-client",
   "type": "module",
-  "version": "0.0.0-beta.0",
+  "version": "0.0.3",
   "description": "TypeScript client types and RPC utilities for the mixi2 API.",
-  "author": "Author Name <author.name@mail.com>",
+  "author": "mi2ku39 <author.name@mail.com>",
   "license": "MIT",
-  "homepage": "https://github.com/mixi2ts/mixi2-ts#readme",
+  "homepage": "https://github.com/mi2ku39/mixi2-client#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mixi2ts/mixi2-ts.git"
+    "url": "git+https://github.com/mi2ku39/mixi2-client.git"
   },
   "bugs": {
-    "url": "https://github.com/mixi2ts/mixi2-ts/issues"
+    "url": "https://github.com/mi2ku39/mixi2-client/issues"
   },
   "engines": {
     "node": "^22.0.0"
   },
   "exports": {
-    ".": {
-      "types": "./dist/index.d.mts",
-      "import": "./dist/index.mjs",
-      "default": "./dist/index.mjs"
-    },
+    ".": "./dist/index.mjs",
     "./package.json": "./package.json"
   },
   "main": "./dist/index.mjs",
@@ -33,7 +29,8 @@
     "LICENSE"
   ],
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
     "build": "tsdown",
@@ -42,16 +39,19 @@
     "typecheck": "tsc --noEmit",
     "version:bump": "bumpp --no-commit --no-tag",
     "prepublishOnly": "pnpm run build",
-    "generate:mixi2-types": "tsx scripts/generate-mixi2-api-types.ts"
+    "generate:mixi2-grpc": "node --experimental-strip-types scripts/generate-mixi2-api-grpc.ts"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.14.1",
+    "@bufbuild/protobuf": "^2.11.0"
   },
   "devDependencies": {
     "@bufbuild/buf": "^1.59.0",
-    "@bufbuild/protobuf": "^2.11.0",
     "@types/node": "^25.0.3",
     "bumpp": "^10.3.2",
-    "openapi-typescript": "^7.10.1",
+    "grpc-tools": "^1.13.0",
+    "ts-proto": "^2.8.3",
     "tsdown": "^0.18.1",
-    "tsx": "^4.20.5",
     "typescript": "^5.9.3",
     "vitest": "^4.0.16"
   }

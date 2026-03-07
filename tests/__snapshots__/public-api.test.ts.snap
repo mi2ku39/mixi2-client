@@ -1,0 +1,9 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`public api barrel exports > keeps stable grouped service namespace keys 1`] = `
+[
+  "application_api",
+  "application_stream",
+  "client_endpoint",
+]
+`;
