@@ -1,30 +1,14 @@
 # mixi2-ts
 
-TypeScript client types and RPC utilities for the mixi2 API.
-
-## イベント購読 (`Mixi2Client#subscribeEvents`)
-
-`Mixi2Client#subscribeEvents(options)` は `AsyncIterable<Event>` を返し、サーバーストリーミングのイベントを順次受け取れます。
-
-- `options.signal` に `AbortSignal` を渡すと、購読をキャンセルできます。
-- 返却される要素は `Event` 型そのままのため、`event.body.case` で `pingEvent` を含むイベント種別を利用側で判別できます。
-
-### 再接続戦略
-
-本 SDK は **自動再接続を内包しません**。再接続ポリシー（指数バックオフ、最大試行回数、終了条件など）はアプリケーション側で実装してください。
-
-理由:
-
-- プロダクトごとに許容する遅延・再試行回数・監視方針が異なるため
-- 認証更新やネットワーク制約に応じて、適切な制御が利用側依存になるため
+mixi2 Connect/gRPC-Web API を TypeScript から利用するための SDK です。
 
 ## インストール
 
 ```bash
-pnpm add mixi2-ts
+pnpm add @mi2ku39/mixi2-client
 ```
 
-開発環境でこのリポジトリを直接利用する場合:
+リポジトリを直接 clone して試す場合:
 
 ```bash
 git clone https://github.com/mixi2ts/mixi2-ts.git
@@ -32,21 +16,39 @@ cd mixi2-ts
 pnpm install
 ```
 
-## ESM import について
+## ESM import
 
-このパッケージは ESM として公開されます（`"type": "module"`）。
-README内の import 例はすべて ESM 形式です。
+本パッケージは ESM（`"type": "module"`）として公開されます。
 
 ```ts
-import { Mixi2Client, createAuthorizationHeader } from 'mixi2-ts'
+import { Mixi2Client, createAuthorizationHeader } from '@mi2ku39/mixi2-client'
 ```
 
-## 初期化方法
+## OAuth2 トークン設定
 
-`Mixi2Client` を使って、`baseUrl`（APIエンドポイント）と `accessToken`（OAuth2アクセストークン）を指定して初期化します。
+アクセストークンは環境変数から読み込むことを推奨します。
+
+```bash
+export MIXI2_ACCESS_TOKEN='your-oauth2-access-token'
+```
 
 ```ts
-import { Mixi2Client } from 'mixi2-ts'
+import { createAuthorizationHeader } from '@mi2ku39/mixi2-client'
+
+const authorization = createAuthorizationHeader(process.env.MIXI2_ACCESS_TOKEN ?? '')
+// => "Bearer your-oauth2-access-token"
+```
+
+> セキュリティのため、アクセストークンをログ出力しないでください。
+
+## 初期化（`Mixi2Client`）
+
+`Mixi2Client` の初期化時には `baseUrl` と `accessToken` に加えて、
+`serviceClient` または `serviceClientFactory` を必ず渡してください。
+`subscribeEvents()` も利用する場合は `streamServiceClient` もしくは `streamServiceClientFactory` も必要です。
+
+```ts
+import { Mixi2Client } from '@mi2ku39/mixi2-client'
 
 const client = new Mixi2Client({
   baseUrl: 'https://api.mixi.social',
@@ -54,107 +56,76 @@ const client = new Mixi2Client({
   serviceClientFactory: () => {
     throw new Error('実際のRPCクライアントを注入してください')
   },
+  streamServiceClientFactory: () => {
+    throw new Error('実際のストリーミングRPCクライアントを注入してください')
+  },
 })
 ```
 
-> `serviceClient` または `serviceClientFactory` は必須です。生成済みの gRPC/Connect クライアントを注入して利用してください。
+## 各 RPC の最小サンプル
 
-## OAuth2トークン設定方法
+`examples/rpc-minimal.ts` で以下の unary RPC をまとめて実行できます。
 
-アクセストークンは環境変数経由で扱うのが安全です。例:
-
-```bash
-export MIXI2_ACCESS_TOKEN='your-oauth2-access-token'
-```
-
-`createAuthorizationHeader` を使うと `Authorization` ヘッダー文字列を生成できます。
-
-```ts
-import { createAuthorizationHeader } from 'mixi2-ts'
-
-const authorization = createAuthorizationHeader(process.env.MIXI2_ACCESS_TOKEN ?? '')
-// => "Bearer your-oauth2-access-token"
-```
-
-## 各RPCの最小実行サンプル
-
-最小サンプルを `examples/rpc-minimal.ts` に用意しています。各RPCについて「入力」「呼び出し」「結果利用」を1つずつ含みます。
-
-実行手順:
+- `getUsers`
+- `getPosts`
+- `createPost`
+- `initiatePostMediaUpload`
+- `getPostMediaStatus`
+- `sendChatMessage`
+- `getStamps`
+- `addStampToPost`
 
 ```bash
-pnpm install
 pnpm tsx examples/rpc-minimal.ts
 ```
 
-サンプル内容（抜粋）:
+## イベント購読サンプル（`subscribeEvents`）
 
-```ts
-import {
-  addStampToPost,
-  createPost,
-  getPostMediaStatus,
-  getPosts,
-  getStamps,
-  getUsers,
-  initiatePostMediaUpload,
-  sendChatMessage,
-} from 'mixi2-ts'
+`examples/subscribe-events.ts` は `Mixi2Client#subscribeEvents()` を `for await ... of` で受信し、`AbortController` で購読停止する最小例です。
 
-// 1) 入力
-const userIds = ['user-1']
-
-// 2) 呼び出し
-const usersResponse = await getUsers(serviceClient, userIds)
-
-// 3) 結果利用
-console.log(usersResponse.users)
+```bash
+pnpm tsx examples/subscribe-events.ts
 ```
+
+`subscribeEvents(options)` は `AsyncIterable<Event>` を返します。
+
+- `options.signal` に `AbortSignal` を渡すことで購読を停止できます。
+- 返却されるイベントは protobuf 生成型 (`Event`) のままなので、`event.body.case` で `pingEvent` などの種別を判別できます。
+
+### 再接続戦略
+
+本 SDK は **自動再接続を行いません**。
+再接続（指数バックオフ・最大試行回数・終了条件）は利用側で実装してください。
+
+## `GetStamps` の挙動
+
+`officialStampLanguage` を指定しない場合、`officialStampSets` は空配列になる可能性があります。
+必要に応じて `officialStampLanguage` を指定してください。
 
 ## Development
 
-- Run the unit tests:
-
 ```bash
 pnpm test
-```
-
-- Build the library:
-
-```bash
 pnpm build
+pnpm typecheck
 ```
 
 ## リリース運用
 
-- SemVer方針とCHANGELOG更新フロー: `docs/release-policy.md`
-- Changelog本体: `CHANGELOG.md`
-- 手動publish workflow: `.github/workflows/publish.yml`
+- SemVer方針と CHANGELOG 更新フロー: `docs/release-policy.md`
+- Changelog 本体: `CHANGELOG.md`
+- 手動 publish workflow: `.github/workflows/publish.yml`
 
-## 生成済み型（`src/generated/mixi2-api/...`）の利用方針
+## 生成済み型（`src/generated/mixi2-api/...`）
 
-- `src/generated/mixi2-api/...` 配下のファイルと `src/generated/mixi2-api.ts` は、`mixi2-api` の proto 定義から自動生成される成果物です。
-- 生成済みファイルは手動編集せず、変更が必要な場合は必ず再生成を行ってください。
-- ライブラリ利用側では、個別ファイルではなく `src/generated/mixi2-api.ts`（公開後はパッケージのエントリポイント経由）から参照することを推奨します。
+- `src/generated/mixi2-api/...` 配下と `src/generated/mixi2-api.ts` は `mixi2-api` proto 定義からの自動生成物です。
+- 生成物は手動編集せず、必要時は再生成してください。
+- ライブラリ利用側は個別ファイルではなくエントリポイント経由の import を推奨します。
 
-## 生成済み型の再生成手順
+### 再生成手順
 
-1. サブモジュールを初期化・更新します。
-
-   ```bash
-   git submodule update --init --recursive
-   ```
-
-2. 依存関係をインストールします。
-
-   ```bash
-   pnpm install
-   ```
-
-3. 型生成スクリプトを実行します。
-
-   ```bash
-   pnpm run generate:mixi2-types
-   ```
-
-上記コマンドにより、`src/generated/mixi2-api/...` 配下の TypeScript 定義と、エクスポートをまとめた `src/generated/mixi2-api.ts` が更新されます。
+```bash
+git submodule update --init --recursive
+pnpm install
+pnpm run generate:mixi2-types
+```
