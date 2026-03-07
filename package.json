@@ -3,15 +3,15 @@
   "type": "module",
   "version": "0.0.0-beta.0",
   "description": "TypeScript client types and RPC utilities for the mixi2 API.",
-  "author": "Author Name <author.name@mail.com>",
+  "author": "mi2ku39 <author.name@mail.com>",
   "license": "MIT",
-  "homepage": "https://github.com/mixi2ts/mixi2-ts#readme",
+  "homepage": "https://github.com/mi2ku39/mixi2-client#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mixi2ts/mixi2-ts.git"
+    "url": "git+https://github.com/mi2ku39/mixi2-client.git"
   },
   "bugs": {
-    "url": "https://github.com/mixi2ts/mixi2-ts/issues"
+    "url": "https://github.com/mi2ku39/mixi2-client/issues"
   },
   "engines": {
     "node": "^22.0.0"
@@ -29,7 +29,8 @@
     "LICENSE"
   ],
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
     "build": "tsdown",
