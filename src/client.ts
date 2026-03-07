@@ -24,6 +24,10 @@ import {
   initiatePostMediaUpload,
   type InitiatePostMediaUploadInput,
 } from './rpc/initiatePostMediaUpload'
+import {
+  createDefaultApplicationApiClient,
+  createDefaultApplicationStreamClient,
+} from './rpc/defaultServiceClients'
 import { sendChatMessage, type SendChatMessageInput } from './rpc/sendChatMessage'
 import { createRpcTransport, type RpcTransport, type RpcTransportOptions } from './transport'
 
@@ -48,11 +52,11 @@ export class Mixi2Client {
     this.serviceClient =
       options.serviceClient ??
       options.serviceClientFactory?.(this.transport) ??
-      (() => {
-        throw new ValidationError('serviceClient or serviceClientFactory is required')
-      })()
+      createDefaultApplicationApiClient()
     this.streamServiceClient =
-      options.streamServiceClient ?? options.streamServiceClientFactory?.(this.transport)
+      options.streamServiceClient ??
+      options.streamServiceClientFactory?.(this.transport) ??
+      createDefaultApplicationStreamClient()
   }
 
   async getUsers(userIdList: string[]): Promise<GetUsersResponse> {
